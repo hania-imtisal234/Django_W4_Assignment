@@ -1,6 +1,6 @@
+from django.urls import path
 from .views import show_appointments
-from django.urls import path, include
 
 urlpatterns = [
-    path('', show_appointments, name='show_appointments'),
+    path('appointments/', show_appointments, name='show_appointments'),
 ]

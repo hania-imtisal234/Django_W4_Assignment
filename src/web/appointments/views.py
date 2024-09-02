@@ -1,11 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Appointment
-from django.shortcuts import get_object_or_404
-
+from web.users.models import Doctor
+from web.appointments.models import Appointment
+from web.patient.models import Patient
 
 @login_required
-def show_appointments(request,doctor):
-    obj = get_object_or_404(Appointment, doctor = doctor)
+def show_appointments(request):
+    doctor = get_object_or_404(Doctor, user=request.user)
+    appointments = Appointment.objects.filter(doctor=doctor).order_by('-scheduled_at')
+    return render(request, 'appointments/appointments.html', {'appointments': appointments, 'doctor': doctor})
 
-    return render(request,'appointments/appointments.html')

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Appointments for {{ doctor.user.get_full_name }}</title>
+</head>
+<body>
+    <h1>Appointments for Dr. {{ doctor.user.get_full_name }}</h1>
+    
+    <ul>
+        {% for appointment in appointments %}
+            <li>
+                Patient: {{ appointment.patient.name }}<br>
+                Scheduled At: {{ appointment.scheduled_at }}<br>
+                <a href="{% url 'patient_records' patient_id=appointment.patient.id doctor_id=doctor.id %}">
+                    View Medical Records
+                </a>
+            </li>
+        {% empty %}
+            <li>No appointments found.</li>
+        {% endfor %}
+    </ul>
+    
+    <a href="{% url 'logout' %}">Logout</a>
+</body>
+</html>

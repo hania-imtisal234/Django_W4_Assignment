@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Records</title>
+</head>
+<body>
+    <h1>Medical Records for {{ patient.name }} (Doctor: {{ doctor.user.get_full_name }})</h1>
+
+    {% if medical_records %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Report</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in medical_records %}
+                    <tr>
+                        <td>{{ record.created_at }}</td>
+                        <td>
+                            {% if record.report %}
+                                <a href="{{ record.report.url }}">View Report</a>
+                            {% else %}
+                                No report available
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_medical_record' record.id %}">Edit</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No records found for this patient.</p>
+    {% endif %}
+    <a href="{% url 'add_medical_record' patient_id=patient.id %}">Add New Record</a>
+
+    <a href="{% url 'show_appointments' %}">Back to Appointments</a>
+</body>
+</html>
