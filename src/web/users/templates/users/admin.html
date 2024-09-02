@@ -8,7 +8,7 @@
 <body>
     <ul>
         {% for doctor in Doctors %}
-        <li>{{doctor}}</li>
+        <li><a href={% url 'detail' doctor.id  %}> {{doctor}} </a></li>
         {% endfor %}
     </ul>
 </body>

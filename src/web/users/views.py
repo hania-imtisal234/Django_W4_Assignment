@@ -1,13 +1,10 @@
 from django.contrib.auth import login, authenticate, logout
+from .forms import LoginForm
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import LoginForm
-from .models import Doctor
+from .models import User
 
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('show_appointments' if not request.user.is_superuser else 'admin_dashboard')
-
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -16,7 +13,7 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('show_appointments' if not user.is_superuser else 'admin_dashboard')
+                return redirect('index')
     else:
         form = LoginForm()
     return render(request, 'users/login.html', {'form': form})
@@ -29,7 +26,15 @@ def logout_view(request):
 def homepage_view(request):
     if request.user.is_superuser:
         return render(request, 'users/admin.html', {
-            "Doctors": Doctor.objects.all()
+            "Doctors": User.get_doctors()
         })
     else:
-        return redirect('show_appointments')
+        return redirect('show_appointments')  # Replace with your actual homepage template
+
+@login_required
+def doctor_detail(request, doctor_id):
+    if request.user.is_superuser:
+        return render(request, 'users/doctor-detail.html', {
+            'doctor': User.get_doctors().get(id=doctor_id)
+        })
+    return redirect('login')

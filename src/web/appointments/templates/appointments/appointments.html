@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Appointments for {{ doctor.user.get_full_name }}</title>
+    <title>Appointments for {{ doctor.name}}</title>
 </head>
 <body>
-    <h1>Appointments for Dr. {{ doctor.user.get_full_name }}</h1>
+    <h1>Appointments for Dr. {{ doctor.name}}</h1>
     
     <ul>
         {% for appointment in appointments %}

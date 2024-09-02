@@ -1,13 +1,12 @@
 # web/medical_records/models.py
 
 from django.db import models
-from web.patient.models import Patient
-from web.users.models import Doctor
-
+from web.users.models import User
+from web.appointments.models import Appointment
 class MedicalRecord(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
-    appointment = models.ForeignKey('appointments.Appointment', null=True, blank=True, on_delete=models.SET_NULL)
+    patient = models.ForeignKey(User,related_name="medical_record_patient", on_delete=models.CASCADE)
+    doctor = models.ForeignKey(User,related_name="medical_record_doctor", on_delete=models.CASCADE)
+    appointment = models.OneToOneField(Appointment, null=True, blank=True, on_delete=models.SET_NULL)
     diagnosis = models.TextField()
     treatment = models.TextField()
     notes = models.TextField()

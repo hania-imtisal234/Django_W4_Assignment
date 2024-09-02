@@ -1,32 +1,41 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
-from django.db.models import CharField
+from django.shortcuts import get_object_or_404
 
 
 class User(AbstractUser):
-    ROLE_CHOICES = (
-        ('admin', 'Admin'),
-        ('doctor', 'Doctor'),
-    )
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES ,default='admin')
-    first_name = CharField(max_length=10,null=False)
-    last_name=CharField(max_length=10,null=True)
-    def __str__(self):
-        return self.username
-    
-    def get_full_name(self):
-        return self.first_name+' '+self.last_name
-
-class Doctor(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    specialization = models.CharField(max_length=100)
-    address = models.TextField()
+    # Common fields
+    name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15)
+    # Fields specific to patients
+    date_of_birth = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=10, blank=True, null=True)
+    # Fields specific to doctors
+    specialization = models.CharField(max_length=100, blank=True, null=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user.get_full_name()
+        return self.name
 
-class Admin(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    def __str__(self):
-        return self.user.get_full_name()
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_superuser:
+            admin_group, created = Group.objects.get_or_create(name='admin')
+            self.groups.add(admin_group)
+        elif not self.groups.exists():
+            patient_group, created = Group.objects.get_or_create(name='patient')
+            self.groups.add(patient_group)
+
+    @classmethod
+    def get_doctors(cls, doctor_id=None):
+        if doctor_id is not None:
+            return cls.objects.filter(groups__name='doctor', id=doctor_id)
+        return cls.objects.filter(groups__name='doctor')
+
+    @classmethod
+    def get_by_id(cls,user_id):
+        return get_object_or_404(cls,id=user_id)

@@ -1,42 +1,31 @@
-from django.urls import reverse
-from django.http import HttpResponseRedirect
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import User, Doctor, Admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import User
 from .forms import CustomUserCreationForm
 
-class CustomUserAdmin(UserAdmin):
-    add_form = CustomUserCreationForm
-    model = User
-    list_display = ('username', 'first_name','last_name','email', 'role', 'is_staff', 'is_active')
-    list_filter = ('role', 'is_staff', 'is_active')
-    fieldsets = (
-        (None, {'fields': ('username','first_name','last_name', 'email', 'password', 'role')}),
-        ('Permissions', {'fields': ('is_staff', 'is_active')}),
-    )
+class UserAdmin(BaseUserAdmin):
+    add_form = CustomUserCreationForm  # Custom form for adding users
+
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username','first_name','last_name' ,'email', 'role', 'password1', 'password2', 'is_staff', 'is_active')}
-        ),
+            'fields': ('username', 'email', 'name', 'phone_number', 'date_of_birth', 'gender', 'specialization', 'password1', 'password2', 'groups'),
+        }),
     )
-    search_fields = ('email','first_name','last_name')
-    ordering = ('email','first_name','last_name')
 
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        if obj.role == 'doctor' and not hasattr(obj, 'doctor'):
-            Doctor.objects.create(user=obj)
-        elif obj.role == 'admin' and not hasattr(obj, 'admin'):
-            Admin.objects.create(user=obj)
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+    )
 
-    def response_add(self, request, obj, post_url_continue=None):
-        if obj.role == 'doctor':
-            return HttpResponseRedirect(reverse('admin:users_doctor_change', args=[obj.doctor.id]))
-        elif obj.role == 'admin':
-            return HttpResponseRedirect(reverse('admin:users_admin_change', args=[obj.admin.id]))
-        return super().response_add(request, obj, post_url_continue)
+    search_fields = ('username', 'email', 'name', 'groups__name')
+    list_filter = ('groups', 'specialization')
 
-admin.site.register(User, CustomUserAdmin)
-admin.site.register(Doctor)
-admin.site.register(Admin)
+    def groups_names(self, obj):
+        return ", ".join(group.name for group in obj.groups.all())
+    groups_names.short_description = 'Groups'
+
+    list_display = ('username', 'name', 'email', 'groups_names')
+
+admin.site.register(User, UserAdmin)

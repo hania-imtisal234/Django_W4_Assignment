@@ -2,14 +2,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from .models import MedicalRecord
 from .forms import MedicalRecordForm
-from web.patient.models import Patient
-from web.users.models import Doctor
+from web.users.models import User
 from web.appointments.models import Appointment
 
 @login_required
 def patient_records(request, patient_id, doctor_id):
-    patient = get_object_or_404(Patient, id=patient_id)
-    doctor = get_object_or_404(Doctor, id=doctor_id)
+    patient = User.get_by_id(patient_id)
+    doctor = User.get_by_id(doctor_id)
 
     appointment = get_object_or_404(Appointment, patient=patient, doctor=doctor)
 
@@ -27,8 +26,8 @@ def patient_records(request, patient_id, doctor_id):
     })
 @login_required
 def add_medical_record(request, patient_id):
-    patient = get_object_or_404(Patient, id=patient_id)
-    doctor = get_object_or_404(Doctor, user=request.user)
+    patient = User.get_by_id(patient_id)
+    doctor = User.get_by_id(request.user.id)
     appointment = get_object_or_404(Appointment, patient=patient, doctor=doctor)
 
     if request.method == 'POST':

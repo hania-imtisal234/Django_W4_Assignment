@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'web.users',
     'web.appointments',
     "web.medical_records",
-    "web.patient",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
