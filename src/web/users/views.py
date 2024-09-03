@@ -1,10 +1,11 @@
 from django.contrib.auth import login, logout
 from django.shortcuts import render, redirect,get_object_or_404,reverse
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.decorators import login_required,permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.core.exceptions import PermissionDenied,ValidationError
 from .forms import UserForm
 from .models import User
+from web.appointments.models import Appointment
 
 def login_view(request):
     if request.method == 'POST':
@@ -30,17 +31,26 @@ def homepage_view(request):
     else:
         raise PermissionDenied("You do not have access to this page.")
 
+def can_view_patient(user, patient_id):
+    if user.is_superuser:
+        return True
+    if user.id == patient_id:
+        return True
+    if user.groups.filter(name='doctor').exists():
+        return Appointment.objects.filter(doctor=user, patient_id=patient_id).exists()
+    return False
+
 @login_required
 @permission_required('users.view_user', raise_exception=True)
 def user_detail(request, user_id, user_type):
     user = get_object_or_404(User, id=user_id)
-    if request.user.is_superuser or request.user == user:
+
+    @user_passes_test(lambda u: can_view_patient(u, user_id), login_url='login', redirect_field_name='index')
+    def inner_view(request):
         return render(request, 'users/user-detail.html', {'user': user, 'user_type': user_type})
-    elif request.user.groups.filter(name='doctor').exists() and user.groups.filter(name='patient').exists() and user in request.user.doctor_appointment.all().values_list('patient', flat=True):
-        # Doctor can view their own patients
-        return render(request, 'users/user-detail.html', {'user': user, 'user_type': user_type})
-    else:
-        raise PermissionDenied("You do not have permission to view this user.")
+
+    return inner_view(request)
+
 
 @login_required
 @permission_required('users.delete_user', raise_exception=True)

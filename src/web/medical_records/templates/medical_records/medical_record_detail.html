@@ -1,0 +1,61 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/medical_records.css' %}">
+    <title>Medical Record Details</title>
+</head>
+<body>
+    <h1>Medical Record Details</h1>
+    
+    <table>
+        <tr>
+            <th>Patient</th>
+            <td>{{ medical_record.patient.get_full_name }} ({{ medical_record.patient.email }})</td>
+        </tr>
+        <tr>
+            <th>Doctor</th>
+            <td>{{ medical_record.doctor.get_full_name }} ({{ medical_record.doctor.email }})</td>
+        </tr>
+        <tr>
+            <th>Date Created</th>
+            <td>{{ medical_record.created_at }}</td>
+        </tr>
+        <tr>
+            <th>Date Updated</th>
+            <td>{{ medical_record.updated_at }}</td>
+        </tr>
+        <tr>
+            <th>Diagnosis</th>
+            <td>{{ medical_record.diagnosis }}</td>
+        </tr>
+        <tr>
+            <th>Treatment</th>
+            <td>{{ medical_record.treatment }}</td>
+        </tr>
+        <tr>
+            <th>Notes</th>
+            <td>{{ medical_record.notes }}</td>
+        </tr>
+        <tr>
+            <th>Report</th>
+            <td>
+                {% if medical_record.report %}
+                    <a href="{{ medical_record.report.url }}">Download Report</a>
+                {% else %}
+                    No report available
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    {% if request.user == medical_record.doctor or request.user.is_staff %}
+        <a href="{% url 'edit_medical_record' record_id=medical_record.id %}" class="btn btn-primary">Edit Record</a>
+    {% endif %}
+    
+    <a href="{% url 'patient_records' patient_id=medical_record.patient.id doctor_id=medical_record.doctor.id %}" class="btn btn-secondary">Back to Records List</a>
+</body>
+</html>

@@ -75,3 +75,24 @@ def edit_medical_record(request, record_id):
         'form': form,
         'record': record
     })
+
+
+@login_required
+@permission_required('medical_records.view_medicalrecord', raise_exception=True)
+def medical_record_detail(request, record_id):
+    # Fetch the medical record by ID
+    medical_record = get_object_or_404(MedicalRecord, id=record_id)
+
+    # Fetch the associated patient and doctor
+    patient = medical_record.patient
+    doctor = medical_record.doctor
+
+    # Ensure that the current user is either the associated patient, doctor, or a staff member
+    if request.user != patient and request.user != doctor and not request.user.is_staff:
+        raise PermissionDenied("You do not have permission to view this medical record.")
+
+    return render(request, 'medical_records/medical_record_detail.html', {
+        'medical_record': medical_record,
+        'patient': patient,
+        'doctor': doctor,
+    })

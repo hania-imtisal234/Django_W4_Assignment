@@ -42,3 +42,15 @@ def show_appointments(request, user_id, user_type):
     except ObjectDoesNotExist:
         # Django will handle the 404 error if user is not found
         return redirect('index')
+
+
+@login_required
+@permission_required('users.view_user', raise_exception=True)
+def list_patients(request):
+    if not request.user.groups.filter(name='doctor').exists():
+        raise PermissionDenied("You do not have permission to view this page.")
+    appointments = Appointment.objects.filter(doctor=request.user).distinct()
+    print(appointments)
+
+    return render(request, 'appointments/list_patients.html', {'appointments': appointments})
+
