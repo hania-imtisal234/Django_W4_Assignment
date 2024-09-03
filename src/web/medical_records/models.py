@@ -1,4 +1,3 @@
-# web/medical_records/models.py
 
 from django.db import models
 from web.users.models import User

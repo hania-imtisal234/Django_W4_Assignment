@@ -44,7 +44,7 @@ handler404=custom_404_view
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('web.appointments.urls')),
-    path('', include('web.medical_records.urls')),  # This should be present
+    path('', include('web.medical_records.urls')),  
     path('', include('web.users.urls')),
 ]
 

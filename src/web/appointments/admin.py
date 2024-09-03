@@ -5,12 +5,10 @@ from web.users.models import User
 
 
 class AppointmentAdmin(admin.ModelAdmin):
-    # Add search fields and filters
     search_fields = ['doctor__name', 'patient__name', 'scheduled_at']
     list_filter = ['scheduled_at', 'created_at']
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # Restrict doctor field to users in the doctor group
         if db_field.name == "doctor":
             try:
                 doctor_group = Group.objects.get(name='doctor')
@@ -18,7 +16,6 @@ class AppointmentAdmin(admin.ModelAdmin):
             except Group.DoesNotExist:
                 kwargs["queryset"] = User.objects.none()
 
-        # Restrict patient field to users in the patient group
         elif db_field.name == "patient":
             try:
                 patient_group = Group.objects.get(name='patient')

@@ -8,30 +8,25 @@ from web.users.models import User
 @permission_required('appointments.view_appointment', raise_exception=True)
 def show_appointments(request, user_id, user_type):
     try:
-        # Fetch the user based on user_id
         user = get_object_or_404(User, id=user_id)
 
-        # Admin: View all appointments
         if request.user.is_superuser:
             if user_type=='doctor':
                 appointments = Appointment.objects.filter(doctor=user_id).order_by('-scheduled_at')
             else:
                 appointments = Appointment.objects.filter(patient=user_id).order_by('-scheduled_at')
-        # Doctor: View their own appointments
         elif request.user.groups.filter(name='doctor').exists() and user_type == 'doctor':
             if request.user == user:
                 appointments = Appointment.objects.filter(doctor=request.user).order_by('-scheduled_at')
             else:
                 raise PermissionDenied("You do not have permission to view other doctors' appointments.")
 
-        # Patient: View their own appointments
         elif request.user.groups.filter(name='patient').exists() and user_type == 'patient':
             if request.user == user:
                 appointments = Appointment.objects.filter(patient=request.user).order_by('-scheduled_at')
             else:
                 raise PermissionDenied("You do not have permission to view other patients' appointments.")
 
-        # If the user does not have permission
         else:
             raise PermissionDenied("You do not have permission to view these appointments.")
 
@@ -42,7 +37,6 @@ def show_appointments(request, user_id, user_type):
         })
 
     except ObjectDoesNotExist:
-        # Django will handle the 404 error if user is not found
         return redirect('index')
 
 

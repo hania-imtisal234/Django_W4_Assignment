@@ -30,6 +30,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group
+from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from .models import User
 
 class CustomUserCreationForm(UserCreationForm):
@@ -66,7 +67,6 @@ class CustomUserCreationForm(UserCreationForm):
             raise forms.ValidationError("Phone number must contain only digits")
         return phone_number
 
-    # The specialization clean method and logic related to 'doctor' group has been removed
 
     def clean(self):
         cleaned_data = super().clean()
@@ -77,20 +77,18 @@ class LoginForm(AuthenticationForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
 
-from django import forms
-from django.contrib.auth.forms import ReadOnlyPasswordHashField
-from .models import User
+
 
 class UserForm(forms.ModelForm):
     password1 = forms.CharField(
         label='Password',
         widget=forms.PasswordInput(attrs={'placeholder': 'Enter new password'}),
-        required=False  # Optional: Set to True if password is required
+        required=False  
     )
     password2 = forms.CharField(
         label='Confirm Password',
         widget=forms.PasswordInput(attrs={'placeholder': 'Confirm new password'}),
-        required=False  # Optional: Set to True if password is required
+        required=False  
     )
 
     class Meta:

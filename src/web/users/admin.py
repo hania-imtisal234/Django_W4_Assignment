@@ -4,7 +4,7 @@ from .models import User
 from .forms import CustomUserCreationForm
 
 class UserAdmin(BaseUserAdmin):
-    add_form = CustomUserCreationForm  # Custom form for adding users
+    add_form = CustomUserCreationForm  
 
     add_fieldsets = (
         (None, {

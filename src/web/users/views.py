@@ -70,10 +70,8 @@ def manage_users(request, user_type):
     search_query = request.GET.get('search', '')
     specialization_filter = request.GET.get('specialization', '')
 
-    # Handle search query and clear filters
     if search_query:
-        specialization_filter = ''  # Clear the specialization filter if a search is performed
-
+        specialization_filter = ''  
     if request.user.is_superuser:
         if user_type == 'doctor':
             users = User.get_doctors()

@@ -4,16 +4,15 @@ from django.shortcuts import get_object_or_404
 
 
 class User(AbstractUser):
-    # Common fields
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15)
     date_of_birth = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
     address=models.CharField(max_length=50,blank=True,null=True)
+
     #field specific to doctor
     specialization = models.CharField(max_length=100, blank=True, null=True)
-    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
