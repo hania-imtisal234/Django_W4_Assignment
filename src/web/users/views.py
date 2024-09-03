@@ -117,7 +117,7 @@ def edit_user(request, user_type, user_id):
         raise PermissionDenied("You do not have permission to edit this user.")
 
     if request.method == 'POST':
-        form = UserForm(request.POST, instance=user)
+        form = UserForm(request.POST, instance=user,kwargs={'user_type':user_type})
         if form.is_valid():
             form.save()
             return redirect(reverse('manage-users', kwargs={'user_type': user_type}))
@@ -132,7 +132,7 @@ def edit_user(request, user_type, user_id):
 @permission_required('users.add_user', raise_exception=True)
 def add_user(request, user_type):
     if request.method == 'POST':
-        form = UserForm(request.POST)
+        form = UserForm(request.POST, user_type=user_type)
         if form.is_valid():
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password2'])
@@ -147,6 +147,6 @@ def add_user(request, user_type):
         else:
             raise ValidationError("Error in form submission.")
     else:
-        form = UserForm()
+        form = UserForm(user_type=user_type)
 
     return render(request, 'users/add_user.html', {'form': form, 'user_type': user_type})
