@@ -6,9 +6,8 @@ from web.users.models import User  # Ensure correct import paths for your models
 @login_required
 def show_appointments(request, user_id, user_type):
     appointments = []
-    doctor = None  # Initialize doctor to None for use in the context
+    doctor = None  
 
-    # Debugging print statement to check user_type
     print(f"user_type: {user_type}")
 
     try:
@@ -18,7 +17,7 @@ def show_appointments(request, user_id, user_type):
         else:
             patient = User.get_by_id(user_id)
             appointments = Appointment.objects.filter(patient=patient).order_by('-scheduled_at')
-    except User.DoesNotExist:  # Assuming your custom get_by_id raises this exception
+    except User.DoesNotExist:  
         return render(request, '404.html', {'error': 'User not found'})  # Adjust to your 404 page
     
     return render(request, 'appointments/appointments.html', {

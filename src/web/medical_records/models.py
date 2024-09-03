@@ -11,7 +11,7 @@ class MedicalRecord(models.Model):
     treatment = models.TextField()
     notes = models.TextField()
     report = models.FileField(upload_to='medical_records/', blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)  # Automatically set the timestamp
+    created_at = models.DateTimeField(auto_now_add=True) 
     updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f'Record for {self.patient.name}'

@@ -2,7 +2,17 @@
 
 {% block title %}Appointments for Dr. {{ doctor.name }}{% endblock %}
 
+{% block header %}
+<header>
+    <nav>
+        <a href="{% url 'show_appointments' user_type='doctor' user_id=doctor.id %}">View Appointments</a>
+        <a href="{% url 'logout' %}">Logout</a>
+    </nav>
+</header>
+{% endblock %}
+
 {% block content %}
+
     <h1>Appointments for Dr. {{ doctor.name }}</h1>
     
     <ul class="appointments-list">

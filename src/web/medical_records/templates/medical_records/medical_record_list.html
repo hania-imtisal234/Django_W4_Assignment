@@ -42,7 +42,7 @@
     {% else %}
         <p>No records found for this patient.</p>
     {% endif %}
-    {% if user_type != 'patient' %}
+    {% if user_type != 'patient' and not medical_records%}
     <a href="{% url 'add_medical_record' patient_id=patient.id user_type=user_type %}">Add New Record</a>
     {% endif %}
     {% if user_type == 'patient' %}

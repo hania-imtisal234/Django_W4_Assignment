@@ -9,13 +9,7 @@
 </head>
 <body>
     {% block header %}
-    <header>
-        <nav>
-            <a href="{% url 'manage-users' 'doctor' %}">Manage Doctors</a>
-            <a href="{% url 'manage-users' 'patient' %}">Manage Patients</a>
-            <a href="{% url 'logout' %}">Logout</a>
-        </nav>
-    </header>
+
     {% endblock %}
     
     <main>
