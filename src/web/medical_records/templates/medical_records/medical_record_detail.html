@@ -55,6 +55,6 @@
         <a href="{% url 'edit_medical_record' record_id=medical_record.id %}" class="btn btn-primary">Edit Record</a>
     {% endif %}
     
-    <a href="{% url 'patient_records' patient_id=medical_record.patient.id doctor_id=medical_record.doctor.id scheduled_at=medical_record.appointment.scheduled_at.timestamp|floatformat:0 %}" class="btn btn-secondary">Back to Records List</a>
+    <a href="{% url 'patient_records' patient_id=medical_record.patient.id doctor_id=medical_record.doctor.id %}" class="btn btn-secondary">Back to Records List</a>
 </body>
 </html>

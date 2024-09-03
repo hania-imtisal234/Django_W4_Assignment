@@ -43,7 +43,7 @@
     {% else %}
         <p>No records found for this patient.</p>
         {% if user_type == 'doctor' or request.user.is_staff %}
-        <a href="{% url 'add_medical_record' patient.id scheduled_at=appointment.scheduled_at.timestamp|floatformat:0 %}">Add New Record</a>
+        <a href="{% url 'add_medical_record' patient.id %}">Add New Record</a>
         {% endif %}
     {% endif %}
     <a href="{% url 'show_appointments' user_type=user_type user_id=user_id %}">Back to Appointments</a>

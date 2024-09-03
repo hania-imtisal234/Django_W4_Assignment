@@ -15,14 +15,14 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Appointments</h1>
+    <h1>Appointments for Dr. {{ doctor.name }}</h1>
     
     <ul class="appointments-list">
         {% for appointment in appointments %}
             <li class="appointment-item">
                 <strong>Patient:</strong> {{ appointment.patient.name }}<br>
                 <strong>Scheduled At:</strong> {{ appointment.scheduled_at }}<br>
-                <a href="{% url 'patient_records' patient_id=appointment.patient.id doctor_id=appointment.doctor.id scheduled_at=appointment.scheduled_at.timestamp|floatformat:0 %}" class="btn btn-link">
+                <a href="{% url 'patient_records' patient_id=appointment.patient.id doctor_id=appointment.doctor.id %}" class="btn btn-link">
                     View Medical Records
                 </a>
             </li>
