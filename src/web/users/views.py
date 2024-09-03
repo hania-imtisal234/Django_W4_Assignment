@@ -1,4 +1,5 @@
 from django import forms
+from django import forms
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm
 <<<<<<< HEAD
@@ -11,9 +12,15 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib.auth.models import Group
 >>>>>>> 263be3f146966609d88edddc230f59f4e52ad125
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.contrib.auth.models import Group
 from .forms import UserForm
 from .models import User
 from web.appointments.models import Appointment
+
 
 
 def login_view(request):
@@ -76,9 +83,21 @@ from django.core.exceptions import ValidationError
 from .models import User
 from django.contrib.auth.decorators import login_required, permission_required
 
+from django.shortcuts import render, redirect
+from django.core.exceptions import ValidationError
+from .models import User
+from django.contrib.auth.decorators import login_required, permission_required
+
 @login_required
 @permission_required('users.view_user', raise_exception=True)
 def manage_users(request, user_type):
+    search_query = request.GET.get('search', '')
+    specialization_filter = request.GET.get('specialization', '')
+
+    # Handle search query and clear filters
+    if search_query:
+        specialization_filter = ''  # Clear the specialization filter if a search is performed
+
     search_query = request.GET.get('search', '')
     specialization_filter = request.GET.get('specialization', '')
 
@@ -96,6 +115,7 @@ def manage_users(request, user_type):
     elif request.user.groups.filter(name='doctor').exists():
         if user_type == 'patient':
             users = User.objects.filter(doctor_appointment__doctor=request.user).distinct()
+        elif user_type == 'doctor':
         elif user_type == 'doctor':
             users = [request.user]
         else:
@@ -122,6 +142,20 @@ def manage_users(request, user_type):
         'specializations': specializations,
         'specialization_filter': specialization_filter
     })
+    if search_query:
+        users = users.filter(name__icontains=search_query)
+    if specialization_filter:
+        users = users.filter(specialization=specialization_filter)
+
+    specializations = User.objects.values_list('specialization', flat=True).distinct()
+
+    return render(request, 'users/manage-users.html', {
+        'users': users,
+        'user_type': user_type,
+        'search_query': search_query,
+        'specializations': specializations,
+        'specialization_filter': specialization_filter
+    })
 
 @login_required
 @permission_required('users.change_user', raise_exception=True)
@@ -132,12 +166,14 @@ def edit_user(request, user_type, user_id):
 
     if request.method == 'POST':
         form = UserForm(request.POST, instance=user)
+        form = UserForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
             return redirect(reverse('manage-users', kwargs={'user_type': user_type}))
         else:
             raise ValidationError("Error in form submission.")
     else:
+        form = UserForm(instance=user)
         form = UserForm(instance=user)
 
     return render(request, 'users/edit-user.html', {'form': form, 'user': user, 'user_type': user_type})
@@ -150,6 +186,7 @@ def add_user(request, user_type):
         if form.is_valid():
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password2'])
+            user.set_password(form.cleaned_data['password2'])
             user.save()
             if user_type == 'doctor':
                 doctor_group, created = Group.objects.get_or_create(name='doctor')
@@ -159,6 +196,7 @@ def add_user(request, user_type):
                 user.groups.add(patient_group)
             return redirect(reverse('manage-users', kwargs={'user_type': user_type}))
         else:
+            print(form.errors)
             print(form.errors)
             raise ValidationError("Error in form submission.")
     else:
