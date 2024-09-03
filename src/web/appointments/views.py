@@ -49,10 +49,12 @@ def show_appointments(request, user_id, user_type):
 @login_required
 @permission_required('users.view_user', raise_exception=True)
 def list_patients(request):
-    if not request.user.groups.filter(name='doctor').exists():
+    if not request.user.groups.filter(name='doctor').exists() and not request.user.is_superuser:
         raise PermissionDenied("You do not have permission to view this page.")
-    appointments = Appointment.objects.filter(doctor=request.user).distinct()
-    print(appointments)
+    if request.user.groups.filter(name='doctor').exists():
+        appointments = Appointment.objects.filter(doctor=request.user).distinct()
+    else:
+        appointments=Appointment.objects.all()
 
     return render(request, 'appointments/list_patients.html', {'appointments': appointments})
 

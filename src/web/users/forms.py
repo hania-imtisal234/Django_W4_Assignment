@@ -38,6 +38,7 @@ class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(label='Email')
     name = forms.CharField(label='Name')
     phone_number = forms.CharField(label='Phone Number')
+    address=forms.CharField(label='Address')
     date_of_birth = forms.DateField(label='Date of Birth', required=False, widget=forms.SelectDateWidget(years=range(1900, 2100)))
     gender = forms.ChoiceField(label='Gender', choices=[('male', 'Male'), ('female', 'Female')], required=False)
     specialization = forms.CharField(label='Specialization', required=False)
@@ -95,7 +96,7 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = [
-            'username', 'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization'
+            'username', 'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization','address'
         ]
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),

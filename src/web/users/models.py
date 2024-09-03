@@ -10,6 +10,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=15)
     date_of_birth = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
+    address=models.CharField(max_length=50,blank=True,null=True)
     #field specific to doctor
     specialization = models.CharField(max_length=100, blank=True, null=True)
     # Timestamps
