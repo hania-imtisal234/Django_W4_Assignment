@@ -6,6 +6,9 @@
     <title>Edit Medical Record</title>
 </head>
 <body>
+    {% if user_type == 'patient' %}
+    <h2>You cannot add medical records</h2>
+    {% else %}
     <h1>Edit Medical Record</h1>
     
     <form method="post" enctype="multipart/form-data">
@@ -15,5 +18,6 @@
     </form>
     
     <a href="{% url 'patient_records' patient_id=record.patient.id doctor_id=record.doctor.id %}">Back to Patient Records</a>
+    {% endif %}
 </body>
 </html>

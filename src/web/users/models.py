@@ -31,11 +31,11 @@ class User(AbstractUser):
             self.groups.add(patient_group)
 
     @classmethod
-    def get_doctors(cls, doctor_id=None):
-        if doctor_id is not None:
-            return cls.objects.filter(groups__name='doctor', id=doctor_id)
+    def get_doctors(cls):
         return cls.objects.filter(groups__name='doctor')
-
+    @classmethod
+    def get_patients(cls):
+        return cls.objects.filter(groups__name='patient')
     @classmethod
     def get_by_id(cls,user_id):
         return get_object_or_404(cls,id=user_id)

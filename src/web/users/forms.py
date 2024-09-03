@@ -74,3 +74,24 @@ class CustomUserCreationForm(UserCreationForm):
 class LoginForm(AuthenticationForm):
     username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = [
+            'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization'
+        ]
+        widgets = {
+            'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+            'specialization': forms.TextInput(attrs={'placeholder': 'Enter specialization'})
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Initialize form with user instance
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user and not user.groups.filter(name='doctor').exists():
+            # Remove specialization field if user is not a doctor
+            self.fields.pop('specialization')
+

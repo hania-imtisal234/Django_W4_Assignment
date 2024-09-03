@@ -6,14 +6,16 @@
     <title>Add Medical Record</title>
 </head>
 <body>
+    {% if user_type == 'patient' %}
+    <h1>You cannot add records</h1>
+    {% else %}
     <h1>Add Medical Record for {{ patient.name }}</h1>
-
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Save</button>
     </form>
-
-    <a href="{% url 'patient_records' patient_id=patient.id doctor_id=doctor.id %}">Back to Patient Records</a>
+    <a href="{% url 'patient_records' patient_id=patient.id doctor_id=doctor.id user_type=user_type%}">Back to Patient Records</a>
+    {% endif %}
 </body>
 </html>

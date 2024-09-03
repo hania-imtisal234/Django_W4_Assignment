@@ -1,25 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Appointments for {{ doctor.name}}</title>
-</head>
-<body>
-    <h1>Appointments for Dr. {{ doctor.name}}</h1>
+{% extends 'users/base.html' %}
+
+{% block title %}Appointments for Dr. {{ doctor.name }}{% endblock %}
+
+{% block content %}
+    <h1>Appointments for Dr. {{ doctor.name }}</h1>
     
-    <ul>
+    <ul class="appointments-list">
         {% for appointment in appointments %}
-            <li>
-                Patient: {{ appointment.patient.name }}<br>
-                Scheduled At: {{ appointment.scheduled_at }}<br>
-                <a href="{% url 'patient_records' patient_id=appointment.patient.id doctor_id=doctor.id %}">
+            <li class="appointment-item">
+                <strong>Patient:</strong> {{ appointment.patient.name }}<br>
+                <strong>Scheduled At:</strong> {{ appointment.scheduled_at }}<br>
+                <a href="{% url 'patient_records' user_type=user_type patient_id=appointment.patient.id doctor_id=appointment.doctor.id %}" class="btn btn-link">
                     View Medical Records
                 </a>
             </li>
         {% empty %}
-            <li>No appointments found.</li>
+            <li class="no-appointments">No appointments found.</li>
         {% endfor %}
     </ul>
-    
-    <a href="{% url 'logout' %}">Logout</a>
-</body>
-</html>
+    <a href="{% url 'logout' %}" class="btn">Logout</a>
+{% endblock %}

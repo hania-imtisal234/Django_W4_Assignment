@@ -1,0 +1,18 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Manage {{ user_type }}{% endblock %}
+
+{% block content %}
+    <h1>Manage {{ user_type }}</h1>
+    <ul class="user-list">
+        {% for user in users %}
+        <li>
+            <a href="{% url 'detail' user_type user.id %}">{{ user }}</a>
+            <a href="{% url 'edit' user_type user.id %}" class="btn">Edit</a>
+            <a href="{% url 'delete' user_type user.id %}" class="btn btn-danger">Delete</a>
+            <a href="{% url 'show_appointments' user_type=user_type user_id=user.id %}" class="btn btn-appointment">Appointments</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'add' user_type %}" class="btn btn-primary">Add New {{ user_type }}</a>
+{% endblock %}

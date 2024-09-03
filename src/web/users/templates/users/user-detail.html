@@ -1,0 +1,13 @@
+{% extends 'users/base.html' %}
+
+{% block title %}User Details{% endblock %}
+
+{% block content %}
+    <h2>Name: {{ user }}</h2>
+    <h2>Email: {{ user.email }}</h2>
+    {% if user_type == "doctor" %}
+    <h2>Specialization: {{ user.specialization }}</h2>
+    {% endif %}
+    <h2>Address: {{ user.address }}</h2>
+    <h2>Phone Number: {{ user.phone_number }}</h2>
+{% endblock %}

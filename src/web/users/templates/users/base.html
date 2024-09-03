@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hospital Management System{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    {% block header %}
+    <header>
+        <nav>
+            <a href="{% url 'manage-users' 'doctor' %}">Manage Doctors</a>
+            <a href="{% url 'manage-users' 'patient' %}">Manage Patients</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </nav>
+    </header>
+    {% endblock %}
+    
+    <main>
+        {% block content %}
+        <!-- Page specific content goes here -->
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Hospital Management System. All rights reserved.</p>
+    </footer>
+</body>
+</html>
