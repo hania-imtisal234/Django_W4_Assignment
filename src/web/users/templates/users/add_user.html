@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1>Add New {{ user_type }}</h1>
-<form method="post" action="{% url 'add' user_type %}" class="form-container">
+<form method="post" action="{% url 'add' user_type=user_type %}" class="form-container">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit" class="btn btn-primary">Add User</button>

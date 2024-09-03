@@ -4,7 +4,7 @@
 
 {% block content %}
 <h1>Edit User</h1>
-<form method="post" action="{% url 'edit' user_type user.id %}" class="form-container">
+<form method="post" action="{% url 'edit' user_type=user_type user_id=user.id %}" class="form-container">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit" class="btn btn-primary">Save Changes</button>

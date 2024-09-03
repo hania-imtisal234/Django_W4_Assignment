@@ -13,8 +13,10 @@ def show_appointments(request, user_id, user_type):
 
         # Admin: View all appointments
         if request.user.is_superuser:
-            appointments = Appointment.objects.all().order_by('-scheduled_at')
-
+            if user_type=='doctor':
+                appointments = Appointment.objects.filter(doctor=user_id).order_by('-scheduled_at')
+            else:
+                appointments = Appointment.objects.filter(patient=user_id).order_by('-scheduled_at')
         # Doctor: View their own appointments
         elif request.user.groups.filter(name='doctor').exists() and user_type == 'doctor':
             if request.user == user:
