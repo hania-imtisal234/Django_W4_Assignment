@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-from urllib.request import localhost
 
 from django.conf.global_settings import AUTH_USER_MODEL
 
@@ -25,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#p16-1$p^s55d%6tyu-!jlx*o_c-5+t60f51#9yl3=1965o)@r'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = [localhost()]
+ALLOWED_HOSTS = []
 
 
 # Application definition
