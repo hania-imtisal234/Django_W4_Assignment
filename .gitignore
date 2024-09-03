@@ -7,3 +7,4 @@ venv/
 *.pyd
 *.sqlite3
 .idea/
+*.pdf

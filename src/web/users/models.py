@@ -8,12 +8,10 @@ class User(AbstractUser):
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15)
-    # Fields specific to patients
     date_of_birth = models.DateField(blank=True, null=True)
     gender = models.CharField(max_length=10, blank=True, null=True)
-    # Fields specific to doctors
+    #field specific to doctor
     specialization = models.CharField(max_length=100, blank=True, null=True)
-
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -26,6 +24,9 @@ class User(AbstractUser):
         if self.is_superuser:
             admin_group, created = Group.objects.get_or_create(name='admin')
             self.groups.add(admin_group)
+        elif self.groups.filter(name='doctor').exists():
+            doctor_group, created = Group.objects.get_or_create(name='doctor')
+            self.groups.add(doctor_group)
         elif not self.groups.exists():
             patient_group, created = Group.objects.get_or_create(name='patient')
             self.groups.add(patient_group)
@@ -33,9 +34,11 @@ class User(AbstractUser):
     @classmethod
     def get_doctors(cls):
         return cls.objects.filter(groups__name='doctor')
+
     @classmethod
     def get_patients(cls):
         return cls.objects.filter(groups__name='patient')
+
     @classmethod
-    def get_by_id(cls,user_id):
-        return get_object_or_404(cls,id=user_id)
+    def get_by_id(cls, user_id):
+        return get_object_or_404(cls, id=user_id)

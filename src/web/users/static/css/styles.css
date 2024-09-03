@@ -1,64 +1,90 @@
+/* Define Primary Color */
+:root {
+    --primary-blue: #3498db;
+    --primary-blue-dark: #2980b9;
+    --secondary-bg: #f4f4f9;
+    --text-color: #333;
+    --header-bg: var(--primary-blue);
+    --footer-bg: #333;
+}
+
 /* Base styles */
 body {
     font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f9;
-    color: #333;
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
 
 header {
-    background-color: #007bff;
+    background-color: var(--header-bg);
     color: #fff;
-    padding: 10px 0;
+    padding: 20px 0;
     text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 nav a {
-    margin: 0 15px;
+    margin: 0 20px;
     text-decoration: none;
     color: #fff;
     font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+nav a:hover {
+    color: #d1e9ff;
 }
 
 main {
     flex: 1;
-    padding: 20px;
+    padding: 40px 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px;
+    border-radius: 10px;
 }
 
 footer {
-    background-color: #333;
+    background-color: var(--footer-bg);
     color: #fff;
     text-align: center;
-    padding: 10px 0;
+    padding: 20px 0;
     position: relative;
     bottom: 0;
     width: 100%;
 }
 
 h1, h2 {
-    color: #007bff;
+    color: var(--primary-blue-dark);
+    margin-bottom: 20px;
 }
 
 .btn {
-    background-color: #007bff;
+    background-color: var(--primary-blue);
     color: white;
-    padding: 10px 15px;
+    padding: 15px 20px;
     text-decoration: none;
     border-radius: 5px;
     margin-right: 10px;
     display: inline-block;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease;
 }
 
 .btn:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-blue-dark);
 }
 
 .btn-danger {
     background-color: #dc3545;
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    transition: background-color 0.3s ease;
 }
 
 .btn-danger:hover {
@@ -71,24 +97,49 @@ h1, h2 {
 }
 
 .user-list li {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .form-container {
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #fff;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: var(--secondary-bg);
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .login-container {
     max-width: 400px;
-    margin: 50px auto;
+    margin: 100px auto;
     text-align: center;
 }
 
 .login-form {
-    margin-top: 20px;
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+input[type="text"], input[type="password"], select {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid var(--primary-blue);
+    font-size: 1.1rem;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-blue-dark);
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
 }

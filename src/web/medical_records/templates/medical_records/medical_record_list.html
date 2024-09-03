@@ -1,12 +1,14 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/medical_records.css' %}">
     <title>Medical Records</title>
 </head>
 <body>
-    <h1>Medical Records for {{ patient.name }} (Doctor: {{ doctor.user.get_full_name }})</h1>
+    <h1>Medical Records for {{ patient.name }} (Doctor: {{ doctor.get_full_name }})</h1>
 
     {% if medical_records %}
         <table>
@@ -28,9 +30,9 @@
                                 No report available
                             {% endif %}
                         </td>
-                        {% if user_type != 'patient' %}
+                        {% if user_type == 'doctor' or request.user.is_staff %}
                         <td>
-                            <a href="{% url 'edit_medical_record' user_type record.id %}">Edit</a>
+                            <a href="{% url 'edit_medical_record' record.id %}">Edit</a>
                         </td>
                         {% else %}
                         <td>-</td>
@@ -41,15 +43,10 @@
         </table>
     {% else %}
         <p>No records found for this patient.</p>
+        {% if user_type == 'doctor' or request.user.is_staff %}
+        <a href="{% url 'add_medical_record' patient.id %}">Add New Record</a>
+        {% endif %}
     {% endif %}
-    {% if user_type != 'patient' and not medical_records%}
-    <a href="{% url 'add_medical_record' patient_id=patient.id user_type=user_type %}">Add New Record</a>
-    {% endif %}
-    {% if user_type == 'patient' %}
-    <a href="{% url 'show_appointments' user_type=user_type user_id=patient.id %}">Back to Appointments</a>
-{% else %}
-    <a href="{% url 'show_appointments' user_type=user_type user_id=doctor.id %}">Back to Appointments</a>
-{% endif %}
-
+    <a href="{% url 'show_appointments' user_type=user_type user_id=user_id %}">Back to Appointments</a>
 </body>
 </html>

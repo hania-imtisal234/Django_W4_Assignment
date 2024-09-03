@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/medical_records.css' %}">
     <title>Edit Medical Record</title>
 </head>
 <body>
@@ -16,8 +18,7 @@
         {{ form.as_p }}
         <button type="submit">Save</button>
     </form>
-    
-    <a href="{% url 'patient_records' user_type=user_type patient_id=record.patient.id doctor_id=record.doctor.id %}">Back to Patient Records</a>
     {% endif %}
+    <a href="{% url 'patient_records' patient_id=record.patient.id doctor_id=record.doctor.id %}">Back to Patient Records</a>
 </body>
 </html>

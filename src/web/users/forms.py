@@ -80,7 +80,7 @@ class UserForm(forms.ModelForm):
     class Meta:
         model = User
         fields = [
-            'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization'
+           'username', 'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization'
         ]
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
