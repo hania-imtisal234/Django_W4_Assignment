@@ -76,22 +76,44 @@ class LoginForm(AuthenticationForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
 
 
+from django import forms
+from django.contrib.auth.forms import ReadOnlyPasswordHashField
+from .models import User
+
 class UserForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={'placeholder': 'Enter new password'}),
+        required=False  # Optional: Set to True if password is required
+    )
+    password2 = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput(attrs={'placeholder': 'Confirm new password'}),
+        required=False  # Optional: Set to True if password is required
+    )
+
     class Meta:
         model = User
         fields = [
-           'username', 'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization'
+            'username', 'name', 'email', 'phone_number', 'date_of_birth', 'gender', 'specialization'
         ]
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
             'specialization': forms.TextInput(attrs={'placeholder': 'Enter specialization'})
         }
 
-    def __init__(self, *args, **kwargs):
-        # Initialize form with user instance
-        user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        if user and not user.groups.filter(name='doctor').exists():
-            # Remove specialization field if user is not a doctor
-            self.fields.pop('specialization')
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords do not match.")
+        return password2
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password1 = self.cleaned_data.get('password1')
+        if password1:
+            user.set_password(password1)
+        if commit:
+            user.save()
+        return user

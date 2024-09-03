@@ -37,9 +37,22 @@ def patient_records(request, patient_id, doctor_id):
 @login_required
 @permission_required('medical_records.add_medicalrecord', raise_exception=True)
 def add_medical_record(request, patient_id):
+    # Get the patient object
     patient = get_object_or_404(User, id=patient_id)
-    doctor = get_object_or_404(User, id=request.user.id)
-    appointment = get_object_or_404(Appointment, patient=patient, doctor=doctor)
+
+    # Determine if the user is a superuser or a doctor
+    if request.user.is_superuser:
+        # Superuser can view all appointments for the patient
+        appointment = get_object_or_404(Appointment, patient=patient)
+        doctor = appointment.doctor
+    else:
+        # Non-superusers must be doctors and can only add records for their own patients
+        doctor = get_object_or_404(User, id=request.user.id)
+        appointment = get_object_or_404(Appointment, patient=patient, doctor=doctor)
+
+        # Ensure the logged-in user is indeed a doctor and has an appointment with the patient
+        if not doctor.groups.filter(name='doctor').exists():
+            raise PermissionDenied("You do not have permission to add medical records for this patient.")
 
     if request.method == 'POST':
         form = MedicalRecordForm(request.POST, request.FILES)
@@ -53,8 +66,11 @@ def add_medical_record(request, patient_id):
     else:
         form = MedicalRecordForm()
 
-    return render(request, 'medical_records/add_medical_record.html', {'form': form, 'patient': patient, 'doctor': doctor})
-
+    return render(request, 'medical_records/add_medical_record.html', {
+        'form': form,
+        'patient': patient,
+        'doctor': doctor
+    })
 @login_required
 @permission_required('medical_records.change_medicalrecord', raise_exception=True)
 def edit_medical_record(request, record_id):
