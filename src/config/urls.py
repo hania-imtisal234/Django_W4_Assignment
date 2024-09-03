@@ -20,7 +20,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.conf.urls import handler403, handler400, handler500
+from django.conf.urls import handler403, handler400, handler500, handler404
 from django.shortcuts import render
 
 def custom_permission_denied_view(request, exception=None):
@@ -32,9 +32,13 @@ def custom_bad_request_view(request, exception=None):
 def custom_error_view(request):
     return render(request, 'errors/500.html', status=500)
 
+def custom_404_view(request,exception):
+    return render(request, 'errors/500.html', status=404)
+
 handler403 = custom_permission_denied_view
 handler400 = custom_bad_request_view
 handler500 = custom_error_view
+handler404=custom_404_view
 
 
 urlpatterns = [

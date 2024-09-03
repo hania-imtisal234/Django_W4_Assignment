@@ -1,0 +1,16 @@
+{% extends "users/base.html" %}
+
+{% block content %}
+    <h1>Patients List</h1>
+    <ul>
+        {% for appointment in appointments %}
+            <li>
+                <a href="{% url 'detail' user_id=appointment.patient.id user_type='patient' %}">
+                    {{ appointment.patient.name }} ({{ appointment.patient.email }})
+                </a>
+            </li>
+        {% empty %}
+            <li>No patients found.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
