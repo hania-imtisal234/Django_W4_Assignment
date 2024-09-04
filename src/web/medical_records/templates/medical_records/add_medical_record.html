@@ -17,7 +17,7 @@
         {{ form.as_p }}
         <button type="submit">Save</button>
     </form>
-    <a href="{% url 'patient_records' patient_id=patient.id doctor_id=doctor.id scheduled_at=appointment.scheduled_at.timestamp|floatformat:0 %}">Back to Patient Records</a>
+    <a href="{% url 'patient_records' patient_id=appointment.patient.id doctor_id=appointment.doctor.id scheduled_at=appointment.scheduled_at.timestamp|floatformat:0 %}">Back to Patient Records</a>
     {% endif %}
 </body>
 </html>
