@@ -32,7 +32,7 @@ def create_user_groups(sender, **kwargs):
 
         for perm in permissions:
             # Dynamically assign permissions to each group
-            model = perm.split('_')[-1]  # e.g., 'user', 'appointment', 'medicalrecord'
+            model = perm.split('_')[-1]
             if model == 'user':
                 content_type = user_content_type
             elif model == 'appointment':

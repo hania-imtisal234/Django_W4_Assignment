@@ -70,7 +70,7 @@ def add_medical_record(request, patient_id, scheduled_at):
             medical_record.doctor = doctor
             medical_record.appointment = appointment
             medical_record.save()
-            return redirect('patient_records', patient_id=patient.id, doctor_id=doctor.id, scheduled_at=scheduled_at)
+            return redirect('patient_records', patient_id=patient.id, doctor_id=doctor.id, scheduled_at=record.appointment.int(scheduled_at.timestamp()))
     else:
         form = MedicalRecordForm()
 
@@ -94,7 +94,7 @@ def edit_medical_record(request, record_id):
         form = MedicalRecordForm(request.POST, request.FILES, instance=record)
         if form.is_valid():
             form.save()
-            return redirect('patient_records', patient_id=record.patient.id, doctor_id=record.doctor.id, scheduled_at=record.appointment.scheduled_at)
+            return redirect('patient_records', patient_id=record.patient.id, doctor_id=record.doctor.id, scheduled_at=int(record.appointment.scheduled_at.timestamp()))
     else:
         form = MedicalRecordForm(instance=record)
 
