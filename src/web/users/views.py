@@ -117,14 +117,12 @@ def edit_user(request, user_type, user_id):
         raise PermissionDenied("You do not have permission to edit this user.")
 
     if request.method == 'POST':
-        form = UserForm(request.POST, instance=user,kwargs={'user_type':user_type})
+        form = UserForm(request.POST, instance=user,user_type=user_type)
         if form.is_valid():
             form.save()
             return redirect(reverse('manage-users', kwargs={'user_type': user_type}))
-        else:
-            raise ValidationError("Error in form submission.")
     else:
-        form = UserForm(instance=user)
+        form = UserForm(instance=user,user_type=user_type)
 
     return render(request, 'users/edit-user.html', {'form': form, 'user': user, 'user_type': user_type})
 
