@@ -26,12 +26,6 @@ class User(AbstractUser):
         if self.is_superuser:
             admin_group, created = Group.objects.get_or_create(name='admin')
             self.groups.add(admin_group)
-        elif self.groups.filter(name='doctor').exists():
-            doctor_group, created = Group.objects.get_or_create(name='doctor')
-            self.groups.add(doctor_group)
-        elif not self.groups.exists():
-            patient_group, created = Group.objects.get_or_create(name='patient')
-            self.groups.add(patient_group)
 
     @classmethod
     def get_doctors(cls):

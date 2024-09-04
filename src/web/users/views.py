@@ -142,8 +142,6 @@ def add_user(request, user_type):
                 patient_group, created = Group.objects.get_or_create(name='patient')
                 user.groups.add(patient_group)
             return redirect(reverse('manage-users', kwargs={'user_type': user_type}))
-        else:
-            raise ValidationError("Error in form submission.")
     else:
         form = UserForm(user_type=user_type)
 
