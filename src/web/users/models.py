@@ -4,6 +4,8 @@ from django.shortcuts import get_object_or_404
 
 
 class User(AbstractUser):
+    first_name=None
+    last_name=None
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15)

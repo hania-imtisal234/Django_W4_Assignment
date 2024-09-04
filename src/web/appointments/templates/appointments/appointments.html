@@ -30,5 +30,9 @@
             <li class="no-appointments">No appointments found.</li>
         {% endfor %}
     </ul>
+    {% if request.user.is_superuser %}
+    <a href="{% url 'index' %}" class="btn">Back to home</a>
+    {% else %}
     <a href="{% url 'logout' %}" class="btn">Logout</a>
+    {% endif %}
 {% endblock %}

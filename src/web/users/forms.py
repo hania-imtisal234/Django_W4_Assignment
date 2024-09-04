@@ -45,7 +45,7 @@ class CustomUserCreationForm(UserCreationForm):
 class LoginForm(AuthenticationForm):
     username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
-
+    
 class UserForm(forms.ModelForm):
     GENDER_CHOICES = [
         ('male', 'Male'),
@@ -83,11 +83,29 @@ class UserForm(forms.ModelForm):
         if user_type != 'doctor':
             self.fields.pop('specialization', None)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        username = cleaned_data.get('username')
+        email = cleaned_data.get('email')
+
+        if self.instance.pk:
+            if User.objects.filter(username=username).exclude(pk=self.instance.pk).exists():
+                self.add_error('username', "Username already exists.")
+            if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+                self.add_error('email', "Email already exists.")
+        else:
+            if User.objects.filter(username=username).exists():
+                self.add_error('username', "Username already exists.")
+            if User.objects.filter(email=email).exists():
+                self.add_error('email', "Email already exists.")
+
+        return cleaned_data
+
     def clean_password2(self):
         password1 = self.cleaned_data.get('password1')
         password2 = self.cleaned_data.get('password2')
         if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Passwords do not match.")
+            self.add_error('password2', "Passwords do not match.")
         return password2
 
     def save(self, commit=True):
