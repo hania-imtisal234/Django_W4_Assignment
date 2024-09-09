@@ -3,7 +3,6 @@ from web.users.models import User
 from django.utils import timezone
 
 
-
 class Appointment(models.Model):
     doctor = models.ForeignKey(User, related_name="doctor_appointment",on_delete=models.CASCADE)
     patient = models.ForeignKey(User, related_name="patient_appointment", on_delete=models.CASCADE)
