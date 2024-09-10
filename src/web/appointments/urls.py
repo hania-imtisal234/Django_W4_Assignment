@@ -1,9 +1,10 @@
 from django.urls import path
-from .views import show_appointments
-from .views import list_patients
+from .views import AppointmentListView, PatientListView
+
 
 urlpatterns = [
     path('<str:user_type>/<int:user_id>/detail/',
-         show_appointments, name='show_appointments'),
-    path('patients/', list_patients, name='list_patients'),  # New URL pattern
+         AppointmentListView.as_view(), name='show_appointments'),
+    path('patients/', PatientListView.as_view(),
+         name='list_patients'),
 ]
