@@ -22,18 +22,24 @@ logger = logging.getLogger(__name__)
 
 
 class CustomLoginView(LoginView):
-    template_name = 'users/login.html'  # The path to your login template
-    redirect_authenticated_user = True  # Redirect if user is already logged in
-    # This is optional if you're using the default form
-    authentication_form = AuthenticationForm
-    print('Login 100')
-
     template_name = 'users/login.html'
     redirect_authenticated_user = True
     authentication_form = AuthenticationForm
 
     def get_success_url(self):
-        return self.request.GET.get('next') or reverse_lazy('index')
+        success_url = self.request.GET.get('next') or reverse_lazy('index')
+        logger.info(f"User {self.request.user} logged in successfully, redirecting to {
+                    success_url}")
+        return success_url
+
+    def form_valid(self, form):
+        logger.info(f"User {self.request.user} attempted to log in.")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        logger.warning(f"Login attempt failed for user {
+                       self.request.POST.get('username')}.")
+        return super().form_invalid(form)
 
 
 class CustomLogoutView(View):
@@ -46,12 +52,6 @@ class CustomLogoutView(View):
     def logout_user(self, request):
         logout(request)
         return redirect(reverse_lazy('login'))
-
-
-# index view
-
-
-logger = logging.getLogger(__name__)
 
 
 class HomePageView(LoginRequiredMixin, View):
@@ -141,7 +141,7 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'users/manage-users.html'
     context_object_name = 'users'
     permission_required = 'users.view_user'
-    cache_timeout = 300  # Cache timeout in seconds (5 minutes)
+    cache_timeout = 300
     paginate_by = 1
 
     def get_queryset(self):
