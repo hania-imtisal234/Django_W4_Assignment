@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls import handler403, handler400, handler500, handler404
 from django.shortcuts import render
-from web.users.views import homepage_view
+from web.users.views import homepage_view, HomePageView
 
 def custom_permission_denied_view(request, exception=None):
     return render(request, 'errors/403.html', status=403)
@@ -28,7 +28,8 @@ urlpatterns = [
     path('appointments/', include('web.appointments.urls')),
     path('medical_records/', include('web.medical_records.urls')),
     path('users/', include('web.users.urls')),
-    path('', homepage_view, name='index'),
+    # path('', homepage_view, name='index'),
+    path('', HomePageView.as_view(), name='index'),
 ]
 
 if settings.DEBUG:
