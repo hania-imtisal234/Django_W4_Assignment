@@ -9,6 +9,7 @@ from web.medical_records.mixin import PermissionAndObjectMixin
 from .models import MedicalRecord
 from .forms import MedicalRecordForm
 from web.appointments.models import Appointment
+from django.db import transaction
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
@@ -107,10 +108,12 @@ class AddMedicalRecordView(LoginRequiredMixin, PermissionRequiredMixin, Permissi
         return initial
 
     def form_valid(self, form):
-        form.instance.patient = self.get_initial()['patient']
-        form.instance.doctor = self.get_initial()['doctor']
-        form.instance.appointment = self.get_initial()['appointment']
-        return super().form_valid(form)
+        # Wrap in a transaction to ensure atomicity
+        with transaction.atomic():
+            form.instance.patient = self.get_initial()['patient']
+            form.instance.doctor = self.get_initial()['doctor']
+            form.instance.appointment = self.get_initial()['appointment']
+            return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -134,8 +137,12 @@ class EditMedicalRecordView(LoginRequiredMixin, PermissionRequiredMixin, UpdateV
         ):
             raise PermissionDenied(
                 "You do not have permission to edit this medical record.")
-
         return record
+
+    def form_valid(self, form):
+        # Wrap the form save in a transaction to ensure atomicity
+        with transaction.atomic():
+            return super().form_valid(form)
 
     def get_success_url(self):
         record = self.get_object()

@@ -5,7 +5,9 @@ from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 from django.urls import reverse_lazy
 from django.views.generic import ListView
-from django.core.exceptions import PermissionDenied
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from .models import Appointment
 from web.users.models import User
@@ -14,8 +16,9 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 # from .forms import DateRangeForm, StatusForm, DoctorNameForm
 from django.db.models import Count
-
-
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views.generic import TemplateView
+from django.db import transaction
 
 
 class PatientListView(ListView):
@@ -108,74 +111,119 @@ class AppointmentListView(ListView):
         context['user_id'] = self.kwargs.get('user_id')
         return context
 
+
+class PatientListView(ListView):
+    model = Appointment
+    template_name = 'appointments/list_patients.html'
+    context_object_name = 'appointments'
+    distinct = True
+
+    def get_queryset(self):
+        user = self.request.user
+        if not (user.groups.filter(name='doctor').exists() or user.is_superuser):
+            raise PermissionDenied(
+                "You do not have permission to view this page.")
+        if user.groups.filter(name='doctor').exists():
+            return Appointment.objects.filter(doctor=user).distinct()
+        else:
+            return Appointment.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
 def get_date_range(start_date, end_date):
-    start_date = timezone.make_aware(datetime.combine(datetime.strptime(start_date, '%Y-%m-%d'), datetime.min.time()))
-    end_date = timezone.make_aware(datetime.combine(datetime.strptime(end_date, '%Y-%m-%d'), datetime.max.time()))
+    start_date = timezone.make_aware(datetime.combine(
+        datetime.strptime(start_date, '%Y-%m-%d'), datetime.min.time()))
+    end_date = timezone.make_aware(datetime.combine(
+        datetime.strptime(end_date, '%Y-%m-%d'), datetime.max.time()))
     return start_date, end_date
 
 
-@login_required
-@permission_required('appointments.view_appointment', raise_exception=True)
-def reporting_view(request, user_type):
-    appointments_per_day = []
-    appointments = []
-    status_appointment = []
-    doc_name = []
+class ReportingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    template_name = 'appointments/track.html'
+    permission_required = 'appointments.view_appointment'
+    raise_exception = True
 
-    if request.method == 'POST':
-        # Get the date range from the POST data
-        from_date = request.POST.get('from')
-        till_date = request.POST.get('till')
-        status = request.POST.get('status')
-        doctor_name = request.POST.get('docname')
+    def get_date_range(self, start_date, end_date):
+        start_date = timezone.make_aware(datetime.combine(
+            datetime.strptime(start_date, '%Y-%m-%d'), datetime.min.time()))
+        end_date = timezone.make_aware(datetime.combine(
+            datetime.strptime(end_date, '%Y-%m-%d'), datetime.max.time()))
+        return start_date, end_date
 
-        # Validate date range input
-        try:
-            start_date, end_date = get_date_range(from_date, till_date)
-        except ValueError:
-            start_date, end_date = None, None
+    def get(self, request, *args, **kwargs):
+        return self.render_with_context(request)
 
-        print(start_date, end_date)
-        # Prepare base queryset
-        queryset = Appointment.objects.all()
+    def post(self, request, *args, **kwargs):
+        return self.render_with_context(request)
 
-        # Filter by date range if provided
-        if start_date and end_date:
-            queryset = queryset.filter(scheduled_at__range=(start_date, end_date))
+    def render_with_context(self, request):
+        user_type = self.kwargs.get('user_type')
+        appointments_per_day = []
+        appointments = []
+        status_appointment = []
+        doc_name = []
 
-            # Query to get appointments per day
-            appointments_per_day = queryset.annotate(
-                day=TruncDate('scheduled_at')
-            ).values('day').annotate(
-                count=Count('pk')
-            ).order_by('day')
-            print(appointments_per_day)
+        if request.method == 'POST':
+            # Get the date range from the POST data
+            from_date = request.POST.get('from')
+            till_date = request.POST.get('till')
+            status = request.POST.get('status')
+            doctor_name = request.POST.get('docname')
 
-        # Filter by status if provided
-        if status:
-            status_appointment = queryset.filter(status=status).order_by('-scheduled_at')
+            # Validate date range input
+            try:
+                start_date, end_date = self.get_date_range(
+                    from_date, till_date)
+            except ValueError:
+                start_date, end_date = None, None
 
-        # Filter by doctor name if provided
-        if doctor_name:
-            doc_name = queryset.filter(doctor__name__icontains=doctor_name).order_by('-scheduled_at')
+            # Prepare base queryset
+            queryset = Appointment.objects.all()
 
-        # Filter appointments based on user type and permissions
-        if user_type == 'doctor':
-            # Add any specific filtering for doctors if needed, otherwise show all appointments
-            appointments = queryset.order_by('-scheduled_at')
-        else:
-            appointments = queryset.order_by('-scheduled_at')
+            # Filter by date range if provided
+            if start_date and end_date:
+                queryset = queryset.filter(
+                    scheduled_at__range=(start_date, end_date))
 
-    # Only show appointments if the user has permission or is a superuser
-    if not request.user.is_superuser:
-        raise PermissionDenied("You do not have permission to view these appointments.")
+                # Query to get appointments per day
+                appointments_per_day = queryset.annotate(
+                    day=TruncDate('scheduled_at')
+                ).values('day').annotate(
+                    count=Count('pk')
+                ).order_by('day')
 
-    return render(request, 'appointments/track.html', {
-        'appointments': appointments,
-        'appointments_per_day': appointments_per_day,
-        'status_appointment': status_appointment,
-        'doc_name': doc_name,
-        'user_type': user_type,
-    })
+            # Filter by status if provided
+            if status:
+                status_appointment = queryset.filter(
+                    status=status
+                ).order_by('-scheduled_at')
 
+            # Filter by doctor name if provided
+            if doctor_name:
+                doc_name = queryset.filter(
+                    doctor__name__icontains=doctor_name
+                ).order_by('-scheduled_at')
 
+            # Filter appointments based on user type
+            if user_type == 'doctor':
+                appointments = queryset.order_by('-scheduled_at')
+            else:
+                appointments = queryset.order_by('-scheduled_at')
+
+        # Ensure only superusers or users with permission can view appointments
+        if not request.user.is_superuser:
+            raise PermissionDenied(
+                "You do not have permission to view these appointments.")
+
+        context = {
+            'appointments': appointments,
+            'appointments_per_day': appointments_per_day,
+            'status_appointment': status_appointment,
+            'doc_name': doc_name,
+            'user_type': user_type,
+        }
+
+        return self.render_to_response(context)

@@ -11,6 +11,7 @@ from django.views.generic import ListView
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.http import HttpResponseRedirect
+from django.db import transaction
 import logging
 from .forms import UserForm
 from .models import User
@@ -20,6 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 class CustomLoginView(LoginView):
+    template_name = 'users/login.html'  # The path to your login template
+    redirect_authenticated_user = True  # Redirect if user is already logged in
+    # This is optional if you're using the default form
+    authentication_form = AuthenticationForm
+    print('Login 100')
+
     template_name = 'users/login.html'
     redirect_authenticated_user = True
     authentication_form = AuthenticationForm
@@ -38,6 +45,12 @@ class CustomLogoutView(View):
     def logout_user(self, request):
         logout(request)
         return redirect(reverse_lazy('login'))
+
+
+# index view
+
+
+logger = logging.getLogger(__name__)
 
 
 class HomePageView(LoginRequiredMixin, View):
@@ -86,7 +99,20 @@ class UserDetailView(LoginRequiredMixin, PermissionRequiredMixin, View):
             cache.set(cache_key, user, timeout=60*15)
 
         user_type = self.kwargs.get('user_type')
+
+        # Perform permission check
+        if not can_view_patient(request.user, user_id):
+            raise PermissionDenied(
+                "You do not have permission to view this user.")
+
+        # Get the user object
+        user = get_object_or_404(User, id=user_id)
+
+        # Render the response with the context data
         return render(request, 'users/user-detail.html', {'user': user, 'user_type': user_type})
+
+
+class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 
 class DeleteUserView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -134,6 +160,22 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 users = User.get_patients()
             else:
                 raise ValidationError("Invalid user type specified.")
+        elif self.request.user.groups.filter(name='doctor').exists():
+            if user_type == 'patient':
+                users = User.objects.filter(
+                    doctor_appointment__doctor=self.request.user).distinct()
+            elif user_type == 'doctor':
+                users = [self.request.user]
+            else:
+                raise ValidationError("Invalid user type specified.")
+        elif self.request.user.groups.filter(name='patient').exists():
+            if user_type == 'patient':
+                users = [self.request.user]
+            else:
+                raise ValidationError("Invalid user type specified.")
+        else:
+            raise PermissionDenied(
+                "You do not have permission to view this page.")
 
             if search_query:
                 users = users.filter(name__icontains=search_query)
@@ -144,6 +186,8 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         return users
 
+        # specializations = User.objects.values_list('specialization', flat=True).distinct()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user_type'] = self.kwargs.get('user_type')
@@ -152,7 +196,59 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             'specialization', flat=True).distinct()
         context['specialization_filter'] = self.request.GET.get(
             'specialization', '')
+        context['specializations'] = User.objects.values_list(
+            'specialization', flat=True).distinct()
+        context['specialization_filter'] = self.request.GET.get(
+            'specialization', '')
         return context
+
+
+# class DeleteUserView(LoginRequiredMixin, View):
+#     permission_required = 'users.delete_user'
+#     raise_exception = True
+#
+#     # @method_decorator(permission_required('users.delete_user', raise_exception=True))
+#     def dispatch(self, request, *args, **kwargs):
+#         self.user_id = kwargs.get('user_id')
+#         self.user_type = kwargs.get('user_type')
+#
+#         if not request.user.is_superuser:
+#             raise PermissionDenied("You do not have permission to delete this user.")
+#
+#         return super().dispatch(request, *args, **kwargs)
+#
+#     def get(self, request, *args, **kwargs):
+#         return self.post(request, *args, **kwargs)
+#
+#     def post(self, request, *args, **kwargs):
+#         user = get_object_or_404(User, id=self.user_id)
+#         user.delete()
+#         return redirect('manage-users', user_type=self.user_type)
+
+
+class DeleteUserView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'users.delete_user'
+    raise_exception = True
+
+    def get_object(self):
+        return get_object_or_404(User, id=self.kwargs['user_id'])
+
+    def post(self, request, *args, **kwargs):
+        user = self.get_object()
+
+        if not request.user.is_superuser:
+            raise PermissionDenied(
+                "You do not have permission to delete this user.")
+
+        # Wrap the delete operation in a transaction
+        with transaction.atomic():
+            user.delete()
+
+        user_type = self.kwargs.get('user_type')
+        return HttpResponseRedirect(reverse_lazy('manage-users', kwargs={'user_type': user_type}))
+
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
 
 
 class EditUserView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -176,8 +272,14 @@ class EditUserView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         if not self.request.user.is_superuser and user != self.request.user:
             raise PermissionDenied(
                 "You do not have permission to edit this user.")
+            raise PermissionDenied(
+                "You do not have permission to edit this user.")
 
         form.save()
+        # Wrap the save operation in a transaction
+        with transaction.atomic():
+            form.save()
+
         user_type = self.kwargs.get('user_type')
         # Invalidate cache for the updated user
         cache.delete(f'user_detail_{user.id}')
@@ -202,10 +304,22 @@ class CreateUserView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
     def form_valid(self, form):
-        user = form.save(commit=False)
-        user.set_password(form.cleaned_data['password2'])
-        user.save()
-        user_type = self.kwargs.get('user_type')
+        # Wrap the entire creation in a transaction
+        with transaction.atomic():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password2'])
+            user.save()
+
+            user_type = self.kwargs.get('user_type')
+
+            if user_type == 'doctor':
+                doctor_group, created = Group.objects.get_or_create(
+                    name='doctor')
+                user.groups.add(doctor_group)
+            elif user_type == 'patient':
+                patient_group, created = Group.objects.get_or_create(
+                    name='patient')
+                user.groups.add(patient_group)
 
         if user_type == 'doctor':
             doctor_group, created = Group.objects.get_or_create(name='doctor')
