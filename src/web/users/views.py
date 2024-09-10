@@ -87,6 +87,8 @@ class UserDetailView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
+        user_id = self.kwargs.get('user_id')
+        user_type = self.kwargs.get('user_type')
         if not can_view_patient(request.user, self.user_id):
             raise PermissionDenied(
                 "You do not have permission to view this user.")
@@ -98,8 +100,6 @@ class UserDetailView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user = get_object_or_404(User, id=self.user_id)
             cache.set(cache_key, user, timeout=60*15)
 
-        user_type = self.kwargs.get('user_type')
-
         # Perform permission check
         if not can_view_patient(request.user, user_id):
             raise PermissionDenied(
@@ -110,9 +110,6 @@ class UserDetailView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
         # Render the response with the context data
         return render(request, 'users/user-detail.html', {'user': user, 'user_type': user_type})
-
-
-class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 
 class DeleteUserView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -177,12 +174,12 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             raise PermissionDenied(
                 "You do not have permission to view this page.")
 
-            if search_query:
-                users = users.filter(name__icontains=search_query)
-            if specialization_filter:
-                users = users.filter(specialization=specialization_filter)
+        if search_query:
+            users = users.filter(name__icontains=search_query)
+        if specialization_filter:
+            users = users.filter(specialization=specialization_filter)
 
-            cache.set(cache_key, users, timeout=900)
+        cache.set(cache_key, users, timeout=900)
 
         return users
 
@@ -272,8 +269,6 @@ class EditUserView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         if not self.request.user.is_superuser and user != self.request.user:
             raise PermissionDenied(
                 "You do not have permission to edit this user.")
-            raise PermissionDenied(
-                "You do not have permission to edit this user.")
 
         form.save()
         # Wrap the save operation in a transaction
@@ -328,5 +323,5 @@ class CreateUserView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             patient_group, created = Group.objects.get_or_create(
                 name='patient')
             user.groups.add(patient_group)
-        cache.delete(f'user_list_{user_type}')
+        # cache.delete(f'user_list_{user_type}')
         return redirect(reverse('manage-users', kwargs={'user_type': user_type}))
