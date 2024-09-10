@@ -7,6 +7,8 @@ from django.shortcuts import render
 from web.users.views import HomePageView
 import debug_toolbar
 
+from web.users.views import HomePageView
+
 
 def custom_permission_denied_view(request, exception=None):
     return render(request, 'errors/403.html', status=403)
@@ -34,12 +36,13 @@ urlpatterns = [
     path('appointments/', include('web.appointments.urls')),
     path('medical_records/', include('web.medical_records.urls')),
     path('users/', include('web.users.urls')),
-    # path('', homepage_view, name='index'),
     path('', HomePageView.as_view(), name='index'),
     path('__debug__/', include(debug_toolbar.urls))
 
 ]
 
 if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.MEDIA_URL,
                           document_root=settings.MEDIA_ROOT)
