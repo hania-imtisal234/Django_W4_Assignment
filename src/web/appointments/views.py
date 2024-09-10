@@ -14,6 +14,7 @@ from web.users.models import User
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 # from .forms import DateRangeForm, StatusForm, DoctorNameForm
 from django.db.models import Count
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -57,6 +58,7 @@ class AppointmentListView(ListView):
     context_object_name = 'appointments'
     ordering = '-scheduled_at'
     cache_timeout = 60 * 15  # Cache timeout in seconds (15 minutes)
+    paginate_by = 2  # Number of appointments per page
 
     def get_queryset(self):
         user_id = self.kwargs.get('user_id')
@@ -116,7 +118,7 @@ class PatientListView(ListView):
     model = Appointment
     template_name = 'appointments/list_patients.html'
     context_object_name = 'appointments'
-    distinct = True
+    paginate_by = 3  # Number of appointments per page
 
     def get_queryset(self):
         user = self.request.user
@@ -145,6 +147,7 @@ class ReportingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = 'appointments/track.html'
     permission_required = 'appointments.view_appointment'
     raise_exception = True
+    cache_timeout = 300  # Cache timeout in seconds (5 minutes)
 
     def get_date_range(self, start_date, end_date):
         start_date = timezone.make_aware(datetime.combine(
@@ -166,19 +169,38 @@ class ReportingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         status_appointment = []
         doc_name = []
 
+        # Initialize context
+        context = {
+            'appointments': appointments,
+            'appointments_per_day': appointments_per_day,
+            'status_appointment': status_appointment,
+            'doc_name': doc_name,
+            'user_type': user_type,
+        }
+
         if request.method == 'POST':
-            # Get the date range from the POST data
+            # Get the date range and filters from the POST data
             from_date = request.POST.get('from')
             till_date = request.POST.get('till')
             status = request.POST.get('status')
             doctor_name = request.POST.get('docname')
 
-            # Validate date range input
+            # Validate and parse date range input
             try:
                 start_date, end_date = self.get_date_range(
                     from_date, till_date)
             except ValueError:
                 start_date, end_date = None, None
+
+            # Generate cache key based on filters
+            cache_key = f"appointments_{start_date}_{
+                end_date}_{status}_{doctor_name}_{user_type}"
+
+            # Check if the data is already cached
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                print("Returning cached data")
+                return self.render_to_response(cached_data)
 
             # Prepare base queryset
             queryset = Appointment.objects.all()
@@ -191,21 +213,17 @@ class ReportingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
                 # Query to get appointments per day
                 appointments_per_day = queryset.annotate(
                     day=TruncDate('scheduled_at')
-                ).values('day').annotate(
-                    count=Count('pk')
-                ).order_by('day')
+                ).values('day').annotate(count=Count('pk')).order_by('day')
 
             # Filter by status if provided
             if status:
                 status_appointment = queryset.filter(
-                    status=status
-                ).order_by('-scheduled_at')
+                    status=status).order_by('-scheduled_at')
 
             # Filter by doctor name if provided
             if doctor_name:
                 doc_name = queryset.filter(
-                    doctor__name__icontains=doctor_name
-                ).order_by('-scheduled_at')
+                    doctor__name__icontains=doctor_name).order_by('-scheduled_at')
 
             # Filter appointments based on user type
             if user_type == 'doctor':
@@ -213,17 +231,15 @@ class ReportingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             else:
                 appointments = queryset.order_by('-scheduled_at')
 
-        # Ensure only superusers or users with permission can view appointments
-        if not request.user.is_superuser:
-            raise PermissionDenied(
-                "You do not have permission to view these appointments.")
+            # Update context after filtering
+            context.update({
+                'appointments': appointments,
+                'appointments_per_day': appointments_per_day,
+                'status_appointment': status_appointment,
+                'doc_name': doc_name,
+            })
 
-        context = {
-            'appointments': appointments,
-            'appointments_per_day': appointments_per_day,
-            'status_appointment': status_appointment,
-            'doc_name': doc_name,
-            'user_type': user_type,
-        }
+            # Cache the result
+            cache.set(cache_key, context, timeout=self.cache_timeout)
 
         return self.render_to_response(context)
