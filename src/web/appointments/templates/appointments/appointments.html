@@ -1,6 +1,6 @@
 {% extends 'users/base.html' %}
 
-{% block title %}Appointments for Dr. {{ doctor.name }}{% endblock %}
+{% block title %}Appointments{% endblock %}
 
 {% block header %}
 <header>
@@ -30,6 +30,26 @@
             <li class="no-appointments">No appointments found.</li>
         {% endfor %}
     </ul>
+
+    <!-- Pagination controls -->
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+
     {% if request.user.is_superuser %}
     <a href="{% url 'index' %}" class="btn">Back to home</a>
     {% else %}

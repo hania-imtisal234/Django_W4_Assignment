@@ -13,6 +13,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.http import HttpResponseRedirect
 from django.db import transaction
 import logging
+from django.core.paginator import Paginator
 from .forms import UserForm
 from .models import User
 from web.appointments.models import Appointment
@@ -140,17 +141,26 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'users/manage-users.html'
     context_object_name = 'users'
     permission_required = 'users.view_user'
+    cache_timeout = 300  # Cache timeout in seconds (5 minutes)
+    paginate_by = 1
 
     def get_queryset(self):
         search_query = self.request.GET.get('search', '')
         specialization_filter = self.request.GET.get('specialization', '')
         user_type = self.kwargs.get('user_type')
 
-        cache_key = f'user_list_{user_type}_{
-            search_query}_{specialization_filter}'
-        users = cache.get(cache_key)
+        cache_key = f"user_list_{self.request.user.id}_{
+            user_type}_{search_query}_{specialization_filter}"
 
-        if users is None:
+        # Check if the result is cached
+        cached_users = cache.get(cache_key)
+        if cached_users is not None:
+            print("Returning cached users")
+            return cached_users
+
+        if search_query:
+            specialization_filter = ''
+        if self.request.user.is_superuser:
             if user_type == 'doctor':
                 users = User.get_doctors()
             elif user_type == 'patient':
@@ -179,11 +189,15 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         if specialization_filter:
             users = users.filter(specialization=specialization_filter)
 
-        cache.set(cache_key, users, timeout=900)
+        # Paginate the queryset
+        paginator = Paginator(users, self.paginate_by)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
 
-        return users
+        # Cache the paginated queryset
+        cache.set(cache_key, page_obj, timeout=self.cache_timeout)
 
-        # specializations = User.objects.values_list('specialization', flat=True).distinct()
+        return page_obj
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -193,34 +207,7 @@ class ManageUsersView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             'specialization', flat=True).distinct()
         context['specialization_filter'] = self.request.GET.get(
             'specialization', '')
-        context['specializations'] = User.objects.values_list(
-            'specialization', flat=True).distinct()
-        context['specialization_filter'] = self.request.GET.get(
-            'specialization', '')
         return context
-
-
-# class DeleteUserView(LoginRequiredMixin, View):
-#     permission_required = 'users.delete_user'
-#     raise_exception = True
-#
-#     # @method_decorator(permission_required('users.delete_user', raise_exception=True))
-#     def dispatch(self, request, *args, **kwargs):
-#         self.user_id = kwargs.get('user_id')
-#         self.user_type = kwargs.get('user_type')
-#
-#         if not request.user.is_superuser:
-#             raise PermissionDenied("You do not have permission to delete this user.")
-#
-#         return super().dispatch(request, *args, **kwargs)
-#
-#     def get(self, request, *args, **kwargs):
-#         return self.post(request, *args, **kwargs)
-#
-#     def post(self, request, *args, **kwargs):
-#         user = get_object_or_404(User, id=self.user_id)
-#         user.delete()
-#         return redirect('manage-users', user_type=self.user_type)
 
 
 class DeleteUserView(LoginRequiredMixin, PermissionRequiredMixin, View):
