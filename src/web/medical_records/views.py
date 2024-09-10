@@ -1,123 +1,132 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.urls import reverse_lazy
+from django.views.generic.edit import CreateView
+from django.views.generic.detail import DetailView
+from django.views.generic.edit import UpdateView
+from django.core.exceptions import PermissionDenied
+from web.medical_records.mixin import PermissionAndObjectMixin
 from .models import MedicalRecord
 from .forms import MedicalRecordForm
-from web.users.models import User
 from web.appointments.models import Appointment
-from datetime import datetime
-from django.utils import timezone
-
-@login_required
-@permission_required('medical_records.view_medicalrecord', raise_exception=True)
-def patient_records(request, patient_id, doctor_id, scheduled_at):
-    patient = get_object_or_404(User, id=patient_id)
-    doctor = get_object_or_404(User, id=doctor_id)
-
-    if request.user != patient and request.user != doctor and not request.user.is_staff:
-        raise PermissionDenied("You do not have permission to view these medical records.")
-
-    # Convert scheduled_at from integer to datetime and set timezone to Asia/Karachi
-    scheduled_datetime = datetime.fromtimestamp(int(scheduled_at))
-    scheduled_datetime = timezone.make_aware(scheduled_datetime, timezone.get_current_timezone())
-    print(f"Scheduled datetime: {scheduled_datetime}")
-
-    # Fetch the appointment with both patient, doctor, and exact scheduled datetime
-    appointment = get_object_or_404(Appointment, patient=patient, doctor=doctor, scheduled_at=scheduled_datetime)
-
-    medical_records = MedicalRecord.objects.filter(
-        patient=patient,
-        doctor=doctor,
-        appointment=appointment
-    ).order_by('-created_at')
-
-    user_type = 'patient' if request.user == patient else 'doctor'
-    user_id = patient.id if request.user == patient else doctor.id
-
-    return render(request, 'medical_records/medical_record_list.html', {
-        'patient': patient,
-        'medical_records': medical_records,
-        'doctor': doctor,
-        'appointment': appointment,
-        'user_type': user_type,
-        'user_id': user_id,
-    })
-
-@login_required
-@permission_required('medical_records.add_medicalrecord', raise_exception=True)
-def add_medical_record(request, patient_id, scheduled_at):
-    patient = get_object_or_404(User, id=patient_id)
-    # Convert scheduled_at from integer to datetime and set timezone to Asia/Karachi
-    scheduled_datetime = datetime.fromtimestamp(int(scheduled_at))
-    scheduled_datetime = timezone.make_aware(scheduled_datetime, timezone.get_current_timezone())
-    print(f"Scheduled datetime: {scheduled_datetime}")
-
-    if request.user.is_superuser:
-        appointment = get_object_or_404(Appointment, patient=patient, scheduled_at=scheduled_datetime)
-        doctor = appointment.doctor
-    else:
-        doctor = get_object_or_404(User, id=request.user.id)
-        appointment = get_object_or_404(Appointment, patient=patient, doctor=doctor, scheduled_at=scheduled_datetime)
-
-        if not doctor.groups.filter(name='doctor').exists():
-            raise PermissionDenied("You do not have permission to add medical records for this patient.")
-
-    if request.method == 'POST':
-        form = MedicalRecordForm(request.POST, request.FILES)
-        if form.is_valid():
-            medical_record = form.save(commit=False)
-            medical_record.patient = patient
-            medical_record.doctor = doctor
-            medical_record.appointment = appointment
-            medical_record.save()
-            return redirect('patient_records', patient_id=patient.id, doctor_id=doctor.id, scheduled_at=int(medical_record.appointment.scheduled_at.timestamp()))
-    else:
-        form = MedicalRecordForm()
-
-    return render(request, 'medical_records/add_medical_record.html', {
-        'form': form,
-        'patient': patient,
-        'doctor': doctor,
-        'appointment': appointment
-    })
-
-@login_required
-@permission_required('medical_records.change_medicalrecord', raise_exception=True)
-def edit_medical_record(request, record_id):
-    record = get_object_or_404(MedicalRecord, id=record_id)
-
-    # Allow access if user is a superuser
-    if not request.user.is_superuser and request.user != record.doctor and not request.user.is_staff:
-        raise PermissionDenied("You do not have permission to edit this medical record.")
-
-    if request.method == 'POST':
-        form = MedicalRecordForm(request.POST, request.FILES, instance=record)
-        if form.is_valid():
-            form.save()
-            return redirect('patient_records', patient_id=record.patient.id, doctor_id=record.doctor.id, scheduled_at=int(record.appointment.scheduled_at.timestamp()))
-    else:
-        form = MedicalRecordForm(instance=record)
-
-    return render(request, 'medical_records/edit_medical_record.html', {
-        'form': form,
-        'record': record
-    })
 
 
-@login_required
-@permission_required('medical_records.view_medicalrecord', raise_exception=True)
-def medical_record_detail(request, record_id):
-    medical_record = get_object_or_404(MedicalRecord, id=record_id)
+class MedicalRecordDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = MedicalRecord
+    template_name = 'medical_records/medical_record_detail.html'
+    context_object_name = 'medical_record'
+    permission_required = 'medical_records.view_medicalrecord'
 
-    patient = medical_record.patient
-    doctor = medical_record.doctor
+    def get_object(self, queryset=None):
+        return super().get_object(queryset=MedicalRecord.objects.select_related('patient', 'doctor', 'appointment'))
 
-    # Allow access if user is a superuser
-    if not request.user.is_superuser and request.user != patient and request.user != doctor and not request.user.is_staff:
-        raise PermissionDenied("You do not have permission to view this medical record.")
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        medical_record = self.get_object()
+        patient = medical_record.patient
+        doctor = medical_record.doctor
 
-    return render(request, 'medical_records/medical_record_detail.html', {
-        'medical_record': medical_record,
-        'patient': patient,
-        'doctor': doctor,
-    })
+        if not self.request.user.is_superuser and self.request.user != patient and self.request.user != doctor and not self.request.user.is_staff:
+            raise PermissionDenied(
+                "You do not have permission to view this medical record.")
+
+        context.update({
+            'patient': patient,
+            'doctor': doctor,
+        })
+        return context
+
+
+class PatientRecordDetailView(PermissionAndObjectMixin, DetailView):
+    model = Appointment
+    template_name = 'medical_records/medical_record_list.html'
+    context_object_name = 'appointment'
+
+    def get_object(self, queryset=None):
+        return self.get_appointment()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        appointment = self.get_object()
+
+        medical_records = MedicalRecord.objects.filter(
+            patient=appointment.patient,
+            doctor=appointment.doctor,
+            appointment=appointment
+        ).select_related('patient', 'doctor').order_by('-created_at')
+
+        user_type = 'patient' if self.request.user == appointment.patient else 'doctor'
+        user_id = appointment.patient.id if self.request.user == appointment.patient else appointment.doctor.id
+
+        context.update({
+            'medical_records': medical_records,
+            'patient': appointment.patient,
+            'doctor': appointment.doctor,
+            'user_type': user_type,
+            'user_id': user_id,
+        })
+        return context
+
+
+class AddMedicalRecordView(LoginRequiredMixin, PermissionRequiredMixin, PermissionAndObjectMixin, CreateView):
+    model = MedicalRecord
+    form_class = MedicalRecordForm
+    template_name = 'medical_records/add_medical_record.html'
+    permission_required = 'medical_records.add_medicalrecord'
+    raise_exception = True
+
+    def get_initial(self):
+        initial = super().get_initial()
+        patient, doctor = self.get_patient_and_doctor()
+        appointment = self.get_appointment()
+
+        initial.update({
+            'patient': patient,
+            'doctor': doctor,
+            'appointment': appointment
+        })
+        return initial
+
+    def form_valid(self, form):
+        form.instance.patient = self.get_initial()['patient']
+        form.instance.doctor = self.get_initial()['doctor']
+        form.instance.appointment = self.get_initial()['appointment']
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_initial())
+        return context
+
+
+class EditMedicalRecordView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = MedicalRecord
+    form_class = MedicalRecordForm
+    template_name = 'medical_records/edit_medical_record.html'
+    permission_required = 'medical_records.change_medicalrecord'
+    raise_exception = True
+
+    def get_object(self, queryset=None):
+        record = super().get_object(queryset=MedicalRecord.objects.select_related(
+            'patient', 'doctor', 'appointment'))
+        if not self.request.user.is_superuser and not (
+            self.request.user == record.doctor or
+            self.request.user.is_staff
+        ):
+            raise PermissionDenied(
+                "You do not have permission to edit this medical record.")
+
+        return record
+
+    def get_success_url(self):
+        record = self.get_object()
+        return reverse_lazy('patient_records', kwargs={
+            'patient_id': record.patient.id,
+            'doctor_id': record.doctor.id,
+            'scheduled_at': int(record.appointment.scheduled_at.timestamp())
+        })
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['medical_record'] = self.get_object()
+        return context

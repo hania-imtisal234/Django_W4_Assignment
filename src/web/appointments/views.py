@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from .models import Appointment
 from web.users.models import User
 
+
 @login_required
 @permission_required('appointments.view_appointment', raise_exception=True)
 def show_appointments(request, user_id, user_type):
@@ -11,24 +12,31 @@ def show_appointments(request, user_id, user_type):
         user = get_object_or_404(User, id=user_id)
 
         if request.user.is_superuser:
-            if user_type=='doctor':
-                appointments = Appointment.objects.filter(doctor=user_id).order_by('-scheduled_at')
+            if user_type == 'doctor':
+                appointments = Appointment.objects.filter(
+                    doctor=user_id).order_by('-scheduled_at')
             else:
-                appointments = Appointment.objects.filter(patient=user_id).order_by('-scheduled_at')
+                appointments = Appointment.objects.filter(
+                    patient=user_id).order_by('-scheduled_at')
         elif request.user.groups.filter(name='doctor').exists() and user_type == 'doctor':
             if request.user == user:
-                appointments = Appointment.objects.filter(doctor=request.user).order_by('-scheduled_at')
+                appointments = Appointment.objects.filter(
+                    doctor=request.user).order_by('-scheduled_at')
             else:
-                raise PermissionDenied("You do not have permission to view other doctors' appointments.")
+                raise PermissionDenied(
+                    "You do not have permission to view other doctors' appointments.")
 
         elif request.user.groups.filter(name='patient').exists() and user_type == 'patient':
             if request.user == user:
-                appointments = Appointment.objects.filter(patient=request.user).order_by('-scheduled_at')
+                appointments = Appointment.objects.filter(
+                    patient=request.user).order_by('-scheduled_at')
             else:
-                raise PermissionDenied("You do not have permission to view other patients' appointments.")
+                raise PermissionDenied(
+                    "You do not have permission to view other patients' appointments.")
 
         else:
-            raise PermissionDenied("You do not have permission to view these appointments.")
+            raise PermissionDenied(
+                "You do not have permission to view these appointments.")
 
         return render(request, 'appointments/appointments.html', {
             'appointments': appointments,
@@ -46,9 +54,9 @@ def list_patients(request):
     if not request.user.groups.filter(name='doctor').exists() and not request.user.is_superuser:
         raise PermissionDenied("You do not have permission to view this page.")
     if request.user.groups.filter(name='doctor').exists():
-        appointments = Appointment.objects.filter(doctor=request.user).distinct()
+        appointments = Appointment.objects.filter(
+            doctor=request.user).distinct()
     else:
-        appointments=Appointment.objects.all()
+        appointments = Appointment.objects.all()
 
     return render(request, 'appointments/list_patients.html', {'appointments': appointments})
-
