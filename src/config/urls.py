@@ -4,19 +4,25 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls import handler403, handler400, handler500, handler404
 from django.shortcuts import render
-from web.users.views import homepage_view, HomePageView
+from web.users.views import HomePageView
+import debug_toolbar
+
 
 def custom_permission_denied_view(request, exception=None):
     return render(request, 'errors/403.html', status=403)
 
+
 def custom_bad_request_view(request, exception=None):
     return render(request, 'errors/400.html', status=400)
+
 
 def custom_error_view(request):
     return render(request, 'errors/500.html', status=500)
 
+
 def custom_404_view(request, exception):
     return render(request, 'errors/404.html', status=404)
+
 
 handler403 = custom_permission_denied_view
 handler400 = custom_bad_request_view
@@ -30,7 +36,10 @@ urlpatterns = [
     path('users/', include('web.users.urls')),
     # path('', homepage_view, name='index'),
     path('', HomePageView.as_view(), name='index'),
+    path('__debug__/', include(debug_toolbar.urls))
+
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL,
+                          document_root=settings.MEDIA_ROOT)

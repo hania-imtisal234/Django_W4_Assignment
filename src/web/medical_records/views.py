@@ -9,6 +9,11 @@ from web.medical_records.mixin import PermissionAndObjectMixin
 from .models import MedicalRecord
 from .forms import MedicalRecordForm
 from web.appointments.models import Appointment
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+
+from .utils.utils import get_cached_data
 
 
 class MedicalRecordDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -17,8 +22,18 @@ class MedicalRecordDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detai
     context_object_name = 'medical_record'
     permission_required = 'medical_records.view_medicalrecord'
 
+    @method_decorator(cache_page(60 * 15))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
     def get_object(self, queryset=None):
-        return super().get_object(queryset=MedicalRecord.objects.select_related('patient', 'doctor', 'appointment'))
+        cache_key = f'medical_record_{self.kwargs["pk"]}'
+        medical_record = get_cached_data(
+            cache_key,
+            lambda: MedicalRecord.objects.select_related(
+                'patient', 'doctor', 'appointment').get(pk=self.kwargs["pk"])
+        )
+        return medical_record
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -49,11 +64,15 @@ class PatientRecordDetailView(PermissionAndObjectMixin, DetailView):
         context = super().get_context_data(**kwargs)
         appointment = self.get_object()
 
-        medical_records = MedicalRecord.objects.filter(
-            patient=appointment.patient,
-            doctor=appointment.doctor,
-            appointment=appointment
-        ).select_related('patient', 'doctor').order_by('-created_at')
+        cache_key = f'medical_records_{appointment.id}'
+        medical_records = get_cached_data(
+            cache_key,
+            lambda: MedicalRecord.objects.filter(
+                patient=appointment.patient,
+                doctor=appointment.doctor,
+                appointment=appointment
+            ).select_related('patient', 'doctor').order_by('-created_at')
+        )
 
         user_type = 'patient' if self.request.user == appointment.patient else 'doctor'
         user_id = appointment.patient.id if self.request.user == appointment.patient else appointment.doctor.id
