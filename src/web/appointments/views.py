@@ -1,62 +1,77 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, permission_required
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.views.generic import ListView
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 from .models import Appointment
 from web.users.models import User
 
 
-@login_required
-@permission_required('appointments.view_appointment', raise_exception=True)
-def show_appointments(request, user_id, user_type):
-    try:
+class AppointmentListView(ListView):
+    model = Appointment
+    template_name = 'appointments/appointments.html'
+    context_object_name = 'appointments'
+    ordering = '-scheduled_at'
+
+    def get_queryset(self):
+        user_id = self.kwargs.get('user_id')
+        user_type = self.kwargs.get('user_type')
         user = get_object_or_404(User, id=user_id)
 
-        if request.user.is_superuser:
+        is_doctor = self.request.user.groups.filter(name='doctor').exists()
+        is_patient = self.request.user.groups.filter(name='patient').exists()
+        is_superuser = self.request.user.is_superuser
+
+        queryset = Appointment.objects.select_related(
+            'doctor', 'patient').order_by(self.ordering)
+
+        if is_superuser:
             if user_type == 'doctor':
-                appointments = Appointment.objects.filter(
-                    doctor=user_id).order_by('-scheduled_at')
+                queryset = queryset.filter(doctor=user_id)
+            elif user_type == 'patient':
+                queryset = queryset.filter(patient=user_id)
             else:
-                appointments = Appointment.objects.filter(
-                    patient=user_id).order_by('-scheduled_at')
-        elif request.user.groups.filter(name='doctor').exists() and user_type == 'doctor':
-            if request.user == user:
-                appointments = Appointment.objects.filter(
-                    doctor=request.user).order_by('-scheduled_at')
+                raise PermissionDenied(
+                    "You do not have permission to view these appointments.")
+        elif is_doctor:
+            if user_type == 'doctor' and self.request.user == user:
+                queryset = queryset.filter(doctor=self.request.user)
             else:
                 raise PermissionDenied(
                     "You do not have permission to view other doctors' appointments.")
-
-        elif request.user.groups.filter(name='patient').exists() and user_type == 'patient':
-            if request.user == user:
-                appointments = Appointment.objects.filter(
-                    patient=request.user).order_by('-scheduled_at')
+        elif is_patient:
+            if user_type == 'patient' and self.request.user == user:
+                queryset = queryset.filter(patient=self.request.user)
             else:
                 raise PermissionDenied(
                     "You do not have permission to view other patients' appointments.")
-
         else:
             raise PermissionDenied(
                 "You do not have permission to view these appointments.")
 
-        return render(request, 'appointments/appointments.html', {
-            'appointments': appointments,
-            'user_type': user_type,
-            'user_id': user_id
-        })
+        return queryset
 
-    except ObjectDoesNotExist:
-        return redirect('index')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user_type'] = self.kwargs.get('user_type')
+        context['user_id'] = self.kwargs.get('user_id')
+        return context
 
 
-@login_required
-@permission_required('users.view_user', raise_exception=True)
-def list_patients(request):
-    if not request.user.groups.filter(name='doctor').exists() and not request.user.is_superuser:
-        raise PermissionDenied("You do not have permission to view this page.")
-    if request.user.groups.filter(name='doctor').exists():
-        appointments = Appointment.objects.filter(
-            doctor=request.user).distinct()
-    else:
-        appointments = Appointment.objects.all()
+class PatientListView(ListView):
+    model = Appointment
+    template_name = 'appointments/list_patients.html'
+    context_object_name = 'appointments'
+    distinct = True
 
-    return render(request, 'appointments/list_patients.html', {'appointments': appointments})
+    def get_queryset(self):
+        user = self.request.user
+        if not (user.groups.filter(name='doctor').exists() or user.is_superuser):
+            raise PermissionDenied(
+                "You do not have permission to view this page.")
+        if user.groups.filter(name='doctor').exists():
+            return Appointment.objects.filter(doctor=user).distinct()
+        else:
+            return Appointment.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
