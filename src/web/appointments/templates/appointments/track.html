@@ -1,0 +1,109 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+
+<form method="post" action="{% url 'reporting_view' user_type=user_type %}">
+    {% csrf_token %}
+    <div>
+    <label for="from">From</label>
+    <input type="date" id="from" name="from">
+    <label for="till">Till</label>
+    <input type="date" id="till" name="till">
+    </div>
+
+    <div>
+    <label for="status">Status</label>
+    <select id="status" name="status">
+        <option value="" selected disabled>Select status</option>
+        <option value="pending" {% if appointment.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Completed</option>
+    </select>
+    </div>
+
+    <div>
+    <label for="docname">Enter Doctor Name:</label>
+    <input type="text" name="docname" id="docname">
+    </div>
+
+    <button type="submit">Submit</button>
+</form>
+    
+<!-- Appointment per day -->
+{% if appointments_per_day %}
+<table>
+      <tbody>
+               <tr>
+                    <th>Day</th>
+                    <th>Count</th>
+                </tr>
+            {% for entry in appointments_per_day %}
+                
+                <tr>
+                    <td>{{ entry.day }}</td>
+                    <td>{{ entry.count }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="2">No appointments found for the selected date range.</td>
+                </tr>
+            {% endfor %}
+             {% endif %}
+        </tbody>
+    </table>    
+
+<!-- Table for Appointments by Status -->
+{% if status_appointment %}
+<table>
+    <thead>
+        <tr>
+            <th>Doctor Name</th>
+            <th>Patient Name</th>
+            <th>Appointment At</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in status_appointment %}
+        <tr>
+            <td>{{ entry.doctor.name }}</td>
+            <td>{{ entry.patient.name }}</td>
+            <td>{{ entry.scheduled_at }}</td>
+            <td>{{ entry.status }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No appointments found for the selected status.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<!-- Table for Appointments by Doctor Name -->
+{% if doc_name %}
+<table>
+    <thead>
+        <tr>
+            <th>Doctor Name</th>
+            <th>Patient Name</th>
+            <th>Appointment At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in doc_name %}
+        <tr>
+            <td>{{ entry.doctor.name }}</td>
+            <td>{{ entry.patient.name }}</td>
+            <td>{{ entry.scheduled_at }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">No appointments found for the searched doctor name.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+
+{% endblock %}
