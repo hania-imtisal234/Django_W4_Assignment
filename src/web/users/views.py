@@ -17,7 +17,6 @@ from django.core.paginator import Paginator
 from .forms import UserForm
 from .models import User
 from web.appointments.models import Appointment
-
 logger = logging.getLogger(__name__)
 
 

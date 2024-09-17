@@ -1,59 +1,53 @@
+
+from django.shortcuts import get_object_or_404
+
 from web.users.models import User
 from .models import Appointment
-from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
-from django.urls import reverse_lazy
 from django.views.generic import ListView
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, permission_required
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.shortcuts import get_object_or_404
+from django.core.exceptions import PermissionDenied
 from .models import Appointment
-from web.users.models import User
 from django.db.models.functions import TruncDate
 from django.utils import timezone
-from datetime import datetime, timedelta
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-# from .forms import DateRangeForm, StatusForm, DoctorNameForm
+from datetime import datetime
 from django.db.models import Count
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views.generic import TemplateView
-from django.db import transaction
 
+from .models import Appointment
 
-class PatientListView(ListView):
-    model = Appointment
-    template_name = 'appointments/list_patients.html'
-    context_object_name = 'appointments'
-    cache_timeout = 60 * 15
+# class PatientListView(ListView):
+#     model = Appointment
+#     template_name = 'appointments/list_patients.html'
+#     context_object_name = 'appointments'
+#     cache_timeout = 60 * 15
 
-    def get_queryset(self):
-        user = self.request.user
-        cache_key = f"patient_appointments_{user.id}"
-        queryset = cache.get(cache_key)
+#     def get_queryset(self):
+#         user = self.request.user
+#         cache_key = f"patient_appointments_{user.id}"
+#         queryset = cache.get(cache_key)
 
-        if queryset is None:
-            if not (user.groups.filter(name='doctor').exists() or user.is_superuser):
-                raise PermissionDenied(
-                    "You do not have permission to view this page.")
+#         if queryset is None:
+#             if not (user.groups.filter(name='doctor').exists() or user.is_superuser):
+#                 raise PermissionDenied(
+#                     "You do not have permission to view this page.")
 
-            if user.groups.filter(name='doctor').exists():
-                queryset = Appointment.objects.filter(doctor=user).distinct()
-            else:
-                queryset = Appointment.objects.all()
+#             if user.groups.filter(name='doctor').exists():
+#                 queryset = Appointment.objects.filter(doctor=user).distinct()
+#             else:
+#                 queryset = Appointment.objects.all()
 
-            cache.set(cache_key, queryset, timeout=self.cache_timeout)
+#             cache.set(cache_key, queryset, timeout=self.cache_timeout)
 
-        return queryset
+#         return queryset
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         return context
 
 
 class AppointmentListView(ListView):
-    model = Appointment
     template_name = 'appointments/appointments.html'
     context_object_name = 'appointments'
     ordering = '-scheduled_at'
@@ -133,14 +127,6 @@ class PatientListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         return context
-
-
-def get_date_range(start_date, end_date):
-    start_date = timezone.make_aware(datetime.combine(
-        datetime.strptime(start_date, '%Y-%m-%d'), datetime.min.time()))
-    end_date = timezone.make_aware(datetime.combine(
-        datetime.strptime(end_date, '%Y-%m-%d'), datetime.max.time()))
-    return start_date, end_date
 
 
 class ReportingView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):

@@ -52,6 +52,7 @@ LOGGING = {
 
 INSTALLED_APPS = [
     'web.users',
+    'web.api',
     'web.appointments',
     "web.medical_records",
     'django.contrib.admin',
@@ -61,7 +62,22 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'debug_toolbar',
+    'drf_yasg',
+    'rest_framework',
+    'django_filters',
+    'rest_framework.authtoken',
+
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+}
 
 MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -104,6 +120,19 @@ WSGI_APPLICATION = 'config.wsgi.application'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'index'
 
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'SECURITY': [
+        {'Token': []}
+    ]
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

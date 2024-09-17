@@ -9,5 +9,4 @@ urlpatterns = [
     path('patients/', PatientListView.as_view(),
          name='list_patients'),
     path('<str:user_type>/list/', ReportingView.as_view(), name='reporting_view')
-
 ]
