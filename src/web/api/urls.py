@@ -15,8 +15,8 @@ appointment_detail = AppointmentViewSet.as_view({
 
 user_appointments = UserAppointmentListView.as_view()
 urlpatterns = [
-    path('login', CustomAuthToken.as_view(), name='login'),
-    path('appointments', appointment_list, name='appointment-list'),
+    path('loginAuth', CustomAuthToken.as_view(), name='login'),
+    path('appointments/', appointment_list, name='appointment-list'),
     path('appointments/<int:pk>/', appointment_detail, name='appointment-detail'),
     path('appointments/<str:user_type>/<int:user_id>/',
          user_appointments, name='show_user_appointments'),

@@ -32,4 +32,4 @@ class Appointment(models.Model):
         ]
 
     def __str__(self):
-        return f"Appointment for {self.patient.username} with Dr. {self.doctor.username} on {self.scheduled_at}"
+        return f"{self.id} Appointment for {self.patient.username} with Dr. {self.doctor.username} on {self.scheduled_at}"

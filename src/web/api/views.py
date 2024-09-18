@@ -40,6 +40,11 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         - Patients: Returns appointments where the user is the patient.
         """
         user = self.request.user
+        cache_key = f'appointments_{user.id}'
+        cached_queryset = cache.get(cache_key)
+
+        if cached_queryset is not None:
+            return cached_queryset
 
         if user.is_superuser:
             queryset = Appointment.objects.all()
@@ -50,6 +55,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         else:
             queryset = Appointment.objects.none()
 
+        cache.set(cache_key, queryset, timeout=60*15)
         return queryset
 
 
